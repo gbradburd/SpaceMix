@@ -252,7 +252,7 @@ transform.frequencies <- function(counts,sample_sizes){
 						"mean.sample.sizes" = mean.sample.sizes,
 						"curated.counts" = counts,
 						"curated.sample.sizes" = sample_sizes,
-						"sample.frequencies" = sample.freqs
+						"sample.frequencies" = sample.freqs,
 						"mean.centered.normalized.sample.freqs" = mean.centered.normalized.sample.freqs)					
 	return(transform.frequencies.list)
 }
