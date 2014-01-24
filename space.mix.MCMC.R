@@ -225,20 +225,19 @@ transformed.Covariance <- function(covariance,projection.matrix){
 }
 
 transform.frequencies <- function(counts,sample_sizes){
-# recover()
 	k <- nrow(counts)
-	#remove alleles fixed in the sample
-		#at sample frequency 0
-			sample_sizes <- sample_sizes[,-c(which(colSums(counts)==0))]
-			counts <- counts[,-c(which(colSums(counts)==0))]
-		#at sample frequency 1
+	#data curation
+		#remove alleles at sample frequency 0 or 1
 			sample.freqs <- counts/sample_sizes
-			counts <- counts[,-c(which(colSums(sample.freqs)==k))]
-			sample_sizes <- sample_sizes[,-c(which(colSums(sample.freqs)==k))]
+				no.samples <- which(colSums(sample_sizes)==0)		#should I drop a locus w/ 1 pop w/ sample.size=0?
+				fixed.alleles <- c(which(colSums(sample.freqs)==0),which(colSums(sample.freqs)==k))
+				loci.to.drop <- c(no.samples,fixed.alleles)
+			counts <- counts[,-loci.to.drop]
+			sample_sizes <- sample_sizes[,-loci.to.drop]
+			sample.freqs <- sample.freqs[,-loci.to.drop]
 	#mean center and normalize			
-		sample.freqs <- counts/sample_sizes
 		mean.sample.sizes <- rowMeans(sample_sizes)
-		#create mean-center transformation matrix
+		#create mean-centering transformation matrix
 			transformation.matrix <- diag(k) - matrix(mean.sample.sizes/(sum(mean.sample.sizes)),nrow=k,ncol=k,byrow=TRUE)
 			mean.centered.sample.freqs <- transformation.matrix %*% sample.freqs
 		#create projection matrix	
@@ -246,15 +245,15 @@ transform.frequencies <- function(counts,sample_sizes){
 			projection.matrix <- qr.Q(qr.transformation.matrix)[,1:qr.transformation.matrix$rank]
 		#normalize sample frequencies by mean frequencies
 			mean.sample.freqs <- sample.freqs - mean.centered.sample.freqs
-			# mean.centered.normalized.sample.freqs <- mean.centered.sample.freqs * #FIX THISSSSSS
-														# sqrt(mean.sample.freqs * (1 - mean.sample.freqs))
-			normalized.sample.freqs <- sample.freqs / sqrt(mean.sample.freqs * (1 - mean.sample.freqs))
-
-	freqs <- t(projection.matrix) %*% normalized.sample.freqs
+			mean.centered.normalized.sample.freqs <- mean.centered.sample.freqs / sqrt(mean.sample.freqs * (1 - mean.sample.freqs))
+	freqs <- t(projection.matrix) %*% mean.centered.normalized.sample.freqs
 	transform.frequencies.list <- list("freqs" = freqs,
-						# "transformation.matrix" = transformation.matrix,
 						"projection.matrix" = projection.matrix,
-						"mean.sample.sizes" = mean.sample.sizes)					
+						"mean.sample.sizes" = mean.sample.sizes,
+						"curated.counts" = counts,
+						"curated.sample.sizes" = sample_sizes,
+						"sample.frequencies" = sample.freqs
+						"mean.centered.normalized.sample.freqs" = mean.centered.normalized.sample.freqs)					
 	return(transform.frequencies.list)
 }
 
@@ -375,7 +374,7 @@ function(		model.option,
 					if(pos.def.counter > 99){
 						stop("the initial transformed covariance matrix is not positive definite! Either attempt to re-initialize MCMC, or increase the size of the delta shift")
 					}			
-                save(Initial.parameters,file=paste(prefix,"Initial.parameters.Robj",sep=''))
+                save(Initial.parameters,transformed.frequency.list,file=paste(prefix,"Initial.parameters.Robj",sep=''))
 				LnL_freqs[1] <- total_likelihood_freqs(freqs,transformed_covariance,loci)
 				prior_prob_alpha0 <- Prior_prob_alpha0(a0[1])
 				prior_prob_nugget <- Prior_prob_nugget(nugget[,1])
