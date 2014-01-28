@@ -19,7 +19,7 @@ Update_population_location <- function(last.params){
 																								rep(0,(last.params$k*2-pop.to.update)*2)),
 																							nrow=2*last.params$k,ncol=2,byrow=TRUE)
 		population.coordinates_prime  <- Geo_coord_correction(population.coordinates_prime)
-		D_prime <- fields::rdist.earth(population.coordinates_prime,R=1)
+		D_prime <- rdist.spacemix(population.coordinates_prime,R = last.params$R)
 		covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime,last.params$delta,last.params$nugget,last.params$mean.sample.sizes)		
 		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions)
 			if(!any(eigen(admixed.covariance_prime)$values < 0)){
@@ -50,7 +50,7 @@ Update_admixture_source_location <- function(last.params){
 																								rep(0,(last.params$k*2-updated.admixture.source)*2)),
 																							nrow=2*last.params$k,ncol=2,byrow=TRUE)
 	population.coordinates_prime  <- Geo_coord_correction(population.coordinates_prime)
-	D_prime <- fields::rdist.earth(population.coordinates_prime,R=1)
+	D_prime <- rdist.spacemix(population.coordinates_prime,R = last.params$R)
 	covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime,last.params$delta,last.params$nugget,last.params$mean.sample.sizes)
 	admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions)
 		if(!any(eigen(admixed.covariance_prime)$values < 0)){
@@ -286,6 +286,15 @@ transform.frequencies <- function(counts,sample_sizes){
 	return(transform.frequencies.list)
 }
 
+rdist.spacemix <- function(x1,R) {
+	coslat1 <- cos((x1[, 2] * pi)/180)
+    sinlat1 <- sin((x1[, 2] * pi)/180)
+	coslon1 <- cos((x1[, 1] * pi)/180)
+    sinlon1 <- sin((x1[, 1] * pi)/180)
+	    pp <- tcrossprod(cbind(coslat1 * coslon1, coslat1 * sinlon1, sinlat1),
+						 cbind(coslat1 * coslon1, coslat1 * sinlon1, sinlat1))
+    return(R * acos(ifelse(abs(pp) > 1, 1 * sign(pp), pp)))
+}
 
 MCMC <-
 function(		model.option,
@@ -297,6 +306,7 @@ function(		model.option,
 				projection.matrix = NULL,
 				observed.X.coordinates,
 				observed.Y.coordinates,
+				R = 1,
 				k,
 				loci,
 				delta,
@@ -391,7 +401,7 @@ function(		model.option,
 						} else if(model.option == "source_and_target"){
 							admix.proportions[[1]] <- rbeta(k,shape1=0.1,shape2=1)
 						}
-					D <- fields::rdist.earth(population.coordinates[[1]],R=1)
+					D <- rdist.spacemix(population.coordinates[[1]],R)
 					covariance <- Covariance(a0[1],aD[1],a2[1],D,delta,nugget[,1],mean.sample.sizes)
 					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[[1]])
 					transformed_covariance <- transformed.Covariance(admixed.covariance,projection.matrix)
@@ -432,7 +442,7 @@ function(		model.option,
 			}
 			
 	last.params <- list("population.coordinates" = population.coordinates[[1]],"admix.proportions" = admix.proportions[[1]],
-						"a0" = a0[1],"aD" = aD[1],"a2" = a2[1],"nugget" = nugget[,1],"delta" = delta,
+						"R" = R,"a0" = a0[1],"aD" = aD[1],"a2" = a2[1],"nugget" = nugget[,1],"delta" = delta,
 						"covariance" = covariance,"admixed.covariance" = admixed.covariance, "transformed_covariance" = transformed_covariance,
 						"freqs" = freqs, "admix.proportions.stp" = admix.proportions.stp, "admix.source.location.stp" = admix.source.location.stp,
 						"nugget_stp" = nugget_stp,"a0_stp" = a0_stp,"aD_stp" = aD_stp,"a2_stp" = a2_stp,"k" = k,"LnL_freqs" = LnL_freqs[1],
