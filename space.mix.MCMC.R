@@ -1,24 +1,11 @@
-Geo_coord_correction <- function(population.coordinates){
-	# recover()
-	corrected.population.coordinates <- population.coordinates
-		#correct longitude
-			corrected.population.coordinates[,1][which(corrected.population.coordinates[,1] > 180)] <- -180 + abs(180 - corrected.population.coordinates[,1][which(corrected.population.coordinates[,1] > 180)])
-			corrected.population.coordinates[,1][which(corrected.population.coordinates[,1] < -180)] <- 180 - abs(-180 - corrected.population.coordinates[,1][which(corrected.population.coordinates[,1] < -180)])
-		#correct latitude
-			corrected.population.coordinates[,2][which(corrected.population.coordinates[,2] > 90)]	<- 90 - abs(90 - corrected.population.coordinates[,2][which(corrected.population.coordinates[,2] > 90)])
-			corrected.population.coordinates[,2][which(corrected.population.coordinates[,2] < -90)] <- 	-90 + abs(-90 - corrected.population.coordinates[,2][which(corrected.population.coordinates[,2] < -90)])
-	return(corrected.population.coordinates)
-}
-
-Update_population_location <- function(last.params){
+Update_admixture_target_location <- function(last.params){
 	# recover()
 	new.params <- last.params
 	pop.to.update <- sample(1:last.params$k,1)
-		population.coordinates_prime <- last.params$population.coordinates + matrix(c(rep(0,(pop.to.update-1)*2),
-																							rnorm(2,0,last.params$location_stp),
-																								rep(0,(last.params$k*2-pop.to.update)*2)),
-																							nrow=2*last.params$k,ncol=2,byrow=TRUE)
-		population.coordinates_prime  <- Geo_coord_correction(population.coordinates_prime)
+		population.coordinates_prime <- last.params$population.coordinates
+		population.coordinates_prime[pop.to.update,] <- propose.new.location(population.coordinates_prime[pop.to.update,1],
+																			population.coordinates_prime[pop.to.update,2],
+																			last.params$admix.target.location.stp)
 		D_prime <- rdist.spacemix(population.coordinates_prime,R = last.params$R)
 		covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime,last.params$delta,last.params$nugget,last.params$mean.sample.sizes)		
 		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions)
@@ -33,10 +20,10 @@ Update_population_location <- function(last.params){
 						new.params$admixed.covariance <- admixed.covariance_prime
 						new.params$transformed_covariance <- transformed_covariance_prime
 						new.params$LnL_freqs <- LnL_freqs_prime
-						new.params$location_accept <- last.params$location_accept + 1
+						new.params$admix_target_location_accept <- last.params$admix_target_location_accept + 1
 					}
 			}
-	new.params$location_moves <- new.params$location_moves+1
+	new.params$admix_target_location_moves <- new.params$admix_target_location_moves+1
 	return(new.params)	
 }
 
@@ -44,12 +31,11 @@ Update_population_location <- function(last.params){
 Update_admixture_source_location <- function(last.params){
 	 # recover()
 	new.params <- last.params
-	updated.admixture.source <- sample((last.params$k+1):(2*last.params$k),1)
-	population.coordinates_prime <- last.params$population.coordinates + matrix(c(rep(0,(updated.admixture.source-1)*2),
-																							rnorm(2,0,last.params$admix.source.location.stp),
-																								rep(0,(last.params$k*2-updated.admixture.source)*2)),
-																							nrow=2*last.params$k,ncol=2,byrow=TRUE)
-	population.coordinates_prime  <- Geo_coord_correction(population.coordinates_prime)
+	pop.to.update <- sample((last.params$k+1):(2*last.params$k),1)
+		population.coordinates_prime <- last.params$population.coordinates
+		population.coordinates_prime[pop.to.update,] <- propose.new.location(population.coordinates_prime[pop.to.update,1],
+																			population.coordinates_prime[pop.to.update,2],
+																			last.params$admix.source.location.stp)
 	D_prime <- rdist.spacemix(population.coordinates_prime,R = last.params$R)
 	covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime,last.params$delta,last.params$nugget,last.params$mean.sample.sizes)
 	admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions)
@@ -73,10 +59,9 @@ Update_admixture_source_location <- function(last.params){
 
 Update_admixture_proportion <- function(last.params){
 	new.params <- last.params
-	updated.population <- sample(last.params$k,1)
-	admix.proportions_prime <- last.params$admix.proportions + c(rep(0,updated.population-1),
-																	rnorm(1,0,last.params$admix.proportions.stp),
-																		rep(0,last.params$k-updated.population))
+	pop.to.update <- sample(last.params$k,1)
+	admix.proportions_prime <- last.params$admix.proportions
+	admix.proportions_prime[pop.to.update] <- rnorm(1,0,last.params$admix.proportions.stp)
 	prior_prob_admix_proportions_prime <- Prior_prob_admix_proportions(admix.proportions_prime)
 	if(!any(is.infinite(prior_prob_admix_proportions_prime))){
 		admixed.covariance_prime <- admixed.Covariance(last.params$covariance,admix.proportions_prime)
@@ -98,6 +83,7 @@ Update_admixture_proportion <- function(last.params){
 	new.params$admix_proportion_moves <- last.params$admix_proportion_moves + 1
 	return(new.params)
 }
+
 Update_a0 <- function(last.params){
 	new.params <- last.params
 	a0_prime <- last.params$a0 + rnorm(1,0,last.params$a0_stp)
@@ -286,16 +272,40 @@ transform.frequencies <- function(counts,sample_sizes){
 	return(transform.frequencies.list)
 }
 
-rdist.spacemix <- function(x1,R) {
-	coslat1 <- cos((x1[, 2] * pi)/180)
-    sinlat1 <- sin((x1[, 2] * pi)/180)
-	coslon1 <- cos((x1[, 1] * pi)/180)
-    sinlon1 <- sin((x1[, 1] * pi)/180)
-	    pp <- tcrossprod(cbind(coslat1 * coslon1, coslat1 * sinlon1, sinlat1),
+rdist.spacemix <- function(x1,R){
+    coslat1 <- cos(x1[, 2])
+	sinlat1 <- sin(x1[, 2])
+    coslon1 <- cos(x1[, 1])
+	sinlon1 <- sin(x1[, 1])
+        pp <- tcrossprod(cbind(coslat1 * coslon1, coslat1 * sinlon1, sinlat1),
 						 cbind(coslat1 * coslon1, coslat1 * sinlon1, sinlat1))
     return(R * acos(ifelse(abs(pp) > 1, 1 * sign(pp), pp)))
 }
 
+sphere.hop <- function(lat,long,distance,bearing){
+	new.lat <- asin(sin(lat) * cos(distance) + cos(lat) * sin(distance) * cos(bearing))
+	dlong <- atan2(sin(bearing)*sin(distance)*cos(lat),cos(distance)-sin(lat)*sin(new.lat))
+	new.long <- (long - dlong + pi) %% (2*pi) - pi
+	return(cbind(new.long,new.lat))
+}
+
+propose.new.location <- function(lat,long,dist.std){
+	proposed.jump <- abs(rnorm(1,0,dist.std))
+	jump.bearing <- runif(1,0,2*pi)
+	coords_prime <- sphere.hop(lat,long,proposed.jump,jump.bearing)
+	return(coords_prime)
+}
+
+degrees2radians <- function(degrees){
+	radians <- (pi/180) * degrees
+	return(radians)
+}
+
+radians2degrees <- function(radians){
+	degrees <- (180/pi) * radians			
+	return(degrees)
+}
+	
 MCMC <-
 function(		model.option,
 				freqs = NULL,
@@ -314,7 +324,7 @@ function(		model.option,
 				a0_stp,
 				aD_stp,
 				a2_stp,
-				location_stp,
+				admix.target.location.stp,
 				admix.source.location.stp,
 				admix.proportions.stp,
 				ngen,
@@ -349,14 +359,15 @@ function(		model.option,
 		LnL_freqs <- numeric(ngen/samplefreq)
 		Prob <- numeric(ngen/samplefreq)
 		population.coordinates <- vector("list",ngen/samplefreq)
+		population.latlong.coordinates <- vector("list",ngen/samplefreq)
 		transformed.covariance.list <- vector("list",ngen/samplefreq)
 		admix.proportions <- vector("list",ngen/samplefreq)
 		nugget <- matrix(0,nrow=k,ncol=ngen/samplefreq)
 		a0 <- numeric(ngen/samplefreq)
 		aD <- numeric(ngen/samplefreq)
 		a2 <- numeric(ngen/samplefreq)
-		location_moves <- numeric(ngen/samplefreq)
 		nugget_moves <- numeric(ngen/samplefreq)
+		admix_target_location_moves <- numeric(ngen/samplefreq)
 		admix_source_location_moves <- numeric(ngen/samplefreq)
 		admix_proportion_moves <- numeric(ngen/samplefreq)
 		a0_moves <- numeric(ngen/samplefreq)
@@ -365,12 +376,15 @@ function(		model.option,
 		a0_accept <- numeric(ngen/samplefreq)
 		aD_accept <- numeric(ngen/samplefreq)		
 		a2_accept <- numeric(ngen/samplefreq)
-		location_accept <- numeric(ngen/samplefreq)
 		nugget_accept <- numeric(ngen/samplefreq)
+		admix_target_location_accept <- numeric(ngen/samplefreq)
 		admix_source_location_accept <- numeric(ngen/samplefreq)
 		admix_proportion_accept <- numeric(ngen/samplefreq)
 
-
+		seed <- sample(111:999,1)
+			save(seed,file=paste(prefix,"_seed.Robj",sep=''))
+		set.seed(seed)
+		
 	if(!continue) {
 		#INITIALIZE MCMC
 				Prob[1] <- -Inf
@@ -383,15 +397,18 @@ function(		model.option,
 						a0[1] <- rgamma(1,1,2)
 						aD[1] <- rexp(1)
 						a2[1] <- runif(1,0,2)
-						population.coordinates[[1]] <- rbind(cbind(observed.X.coordinates,
-																observed.Y.coordinates),
-														cbind(	runif(k, 
+						population.coordinates[[1]] <- degrees2radians(
+															rbind(
+																cbind(observed.X.coordinates,
+																	observed.Y.coordinates),
+																cbind(	runif(k, 
 																	min = min(observed.X.coordinates), 
 																	max = max(observed.X.coordinates)),
 																runif(k, 
 																	min = min(observed.Y.coordinates), 
-																	max = max(observed.Y.coordinates))))
-						population.coordinates[[1]] <- Geo_coord_correction(population.coordinates[[1]])
+																	max = max(observed.Y.coordinates)))
+															)
+														)
 						if(model.option == "no_movement"){
 							admix.proportions[[1]] <- numeric(k)
 						} else if(model.option == "target"){
@@ -444,17 +461,19 @@ function(		model.option,
 	last.params <- list("population.coordinates" = population.coordinates[[1]],"admix.proportions" = admix.proportions[[1]],
 						"R" = R,"a0" = a0[1],"aD" = aD[1],"a2" = a2[1],"nugget" = nugget[,1],"delta" = delta,
 						"covariance" = covariance,"admixed.covariance" = admixed.covariance, "transformed_covariance" = transformed_covariance,
-						"freqs" = freqs, "admix.proportions.stp" = admix.proportions.stp, "admix.source.location.stp" = admix.source.location.stp,
+						"freqs" = freqs, "admix.proportions.stp" = admix.proportions.stp, 
+						"admix_target_location.stp" = admix.target.location.stp,"admix.source.location.stp" = admix.source.location.stp,
 						"nugget_stp" = nugget_stp,"a0_stp" = a0_stp,"aD_stp" = aD_stp,"a2_stp" = a2_stp,"k" = k,"LnL_freqs" = LnL_freqs[1],
 						"prior_prob_alpha0" = prior_prob_alpha0,"prior_prob_alphaD" = prior_prob_alphaD,
 						"prior_prob_alpha2" = prior_prob_alpha2,"prior_prob_nugget" = prior_prob_nugget,
 						"prior_prob_admix_proportions" = prior_prob_admix_proportions,						
 						"a0_moves" = a0_moves[1],"aD_moves" = aD_moves[1],"a2_moves" = a2_moves[1],"nugget_moves" = nugget_moves[1],
 						"admix_source_location_moves" = admix_source_location_moves[1],"admix_proportion_moves" = admix_proportion_moves[1],
+						"admix_target_location_moves" = admix_target_location_moves[1],
 						"a0_accept" = a0_accept[1],"aD_accept" = aD_accept[1],"a2_accept" = a2_accept[1],"nugget_accept" = nugget_accept[1],
 						"admix_source_location_accept" = admix_source_location_accept[1],"admix_proportion_accept" = admix_proportion_accept[1],
+						"admix_target_location_accept" = admix_target_location_accept[1],
 						"loci" = loci,"D" = D,"projection.matrix" = projection.matrix,
-						"location_stp" = location_stp,"location_moves" = location_moves[1],"location_accept" = location_accept[1],
 						"observed.X.coordinates" = observed.X.coordinates,"observed.Y.coordinates" = observed.Y.coordinates,"mean.sample.sizes" = mean.sample.sizes)
 
 	#Run the MCMC
@@ -462,11 +481,11 @@ function(		model.option,
 	if(model.option == "no_movement"){
 		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget)
 	} else if(model.option == "target"){
-		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget,Update_population_location)
+		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget,Update_admixture_target_location)
 	} else if(model.option == "source"){
 		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget,Update_admixture_source_location,Update_admixture_proportion)
 	} else if(model.option == "source_and_target"){
-		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget,Update_population_location,Update_admixture_source_location,Update_admixture_proportion)
+		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget,Update_admixture_target_location,Update_admixture_source_location,Update_admixture_proportion)
 	}
 	
 	for(i in 2:ngen) {
@@ -476,6 +495,7 @@ function(		model.option,
 		if(i%%samplefreq == 0){
 			j <- i/samplefreq
 			population.coordinates[[j]] <- new.params$population.coordinates
+			population.latlong.coordinates[[j]] <- radians2degrees(new.params$population.coordinates)
 			transformed.covariance.list[[j]] <- new.params$transformed_covariance
 			admix.proportions[[j]] <- new.params$admix.proportions
 			nugget[,j] <- new.params$nugget
@@ -491,12 +511,12 @@ function(		model.option,
 						new.params$prior_prob_alpha2
 			admix_source_location_moves[j] <- new.params$admix_source_location_moves
 			admix_proportion_moves[j] <- new.params$admix_proportion_moves
-			location_moves[j] <- new.params$location_moves		
+			admix_target_location_moves[j] <- new.params$admix_target_location_moves		
 			a0_moves[j] <- new.params$a0_moves
 			aD_moves[j] <- new.params$aD_moves			
 			a2_moves[j] <- new.params$a2_moves
 			nugget_moves[j] <- new.params$nugget_moves			
-			location_accept[j] <- new.params$location_accept
+			admix_target_location_accept[j] <- new.params$admix_target_location_accept
 			admix_source_location_accept[j] <- new.params$admix_source_location_accept
 			admix_proportion_accept[j] <- new.params$admix_proportion_accept
 			a0_accept[j] <- new.params$a0_accept
@@ -522,14 +542,12 @@ function(		model.option,
 		if(i%%savefreq == 0){	
 			save(last.params,
 				LnL_freqs,Prob,covariance,admixed.covariance,transformed_covariance,
-				population.coordinates,transformed.covariance.list,admix.proportions,
-				a0,aD,a2,nugget,
-				samplefreq,ngen,
-				admix_source_location_moves,admix_proportion_moves,
-				a0_moves,aD_moves,a2_moves,nugget_moves,
-				admix_source_location_accept,admix_proportion_accept,a0_accept,aD_accept,a2_accept,nugget_accept,
+				population.coordinates,population.latlong.coordinates,
+				transformed.covariance.list,admix.proportions,a0,aD,a2,nugget,samplefreq,ngen,
+				admix_target_location_moves,admix_source_location_moves,admix_proportion_moves,a0_moves,aD_moves,a2_moves,nugget_moves,
+				admix_source_location_accept,admix_target_location_accept,admix_proportion_accept,a0_accept,aD_accept,a2_accept,nugget_accept,
 				admix.source.location.stp,admix.proportions.stp,a0_stp,aD_stp,a2_stp,nugget_stp,
-				location_moves, location_accept, location_stp,mean.sample.sizes,
+				admix.target.location.stp,mean.sample.sizes,
 				file=paste(prefix,sprintf("space_MCMC_output%d.Robj",1),sep=''))
 		}
 	}
