@@ -389,14 +389,13 @@ function(		model.option,
 		#INITIALIZE MCMC
 				Prob[1] <- -Inf
 				covariance <- matrix(0,nrow=k*2,ncol=k*2)
-				pos.def.counter <- 0
+				badness.counter <- 0
 
-			while(Prob[1] == -Inf){
-				while(!matrixcalc::is.positive.definite(covariance) && pos.def.counter < 100){
+			while(Prob[1] == -Inf | !matrixcalc::is.positive.definite(covariance) && badness.counter < 100){
 						nugget[,1] <- rexp(k)
 						a0[1] <- rgamma(1,1,2)
 						aD[1] <- rexp(1)
-						a2[1] <- runif(1,0,2)
+						a2[1] <- runif(1,0.1,2)
 						population.coordinates[[1]] <- degrees2radians(
 															rbind(
 																cbind(observed.X.coordinates,
@@ -428,17 +427,18 @@ function(		model.option,
 												transformed_covariance = transformed_covariance,
 												population.coordinates = population.coordinates,
 												D = D, projection.matrix = projection.matrix)
-					pos.def.counter <- pos.def.counter + 1			
-				}
-					if(pos.def.counter > 99){
-						stop("the initial transformed covariance matrix is not positive definite! Either attempt to re-initialize MCMC, or increase the size of the delta shift")
-					}			
+
                 save(Initial.parameters,file=paste(prefix,"Initial.parameters.Robj",sep=''))
 				LnL_freqs[1] <- total_likelihood_freqs(freqs,transformed_covariance,loci)
+					cat("LnL",LnL_freqs[1],"\n")
 				prior_prob_alpha0 <- Prior_prob_alpha0(a0[1])
+					cat("a0",prior_prob_alpha0,"\n")
 				prior_prob_alphaD <- Prior_prob_alphaD(aD[1])
+					cat("aD",prior_prob_alphaD,"\n")
 				prior_prob_alpha2 <- Prior_prob_alpha2(a2[1])
+					cat("a2",prior_prob_alpha2,"\n")
 				prior_prob_nugget <- Prior_prob_nugget(nugget[,1])
+					cat("nugget",prior_prob_nugget,"\n")				
 					if(model.option == "no_movement"){
 						prior_prob_admix_proportions <- numeric(k)
 					} else if(model.option == "target"){
@@ -449,14 +449,19 @@ function(		model.option,
 						prior_prob_admix_proportions <- Prior_prob_admix_proportions(admix.proportions[[1]])
 					}
 				Prob[1] <- LnL_freqs[1] + sum(prior_prob_admix_proportions) + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alphaD + prior_prob_alpha2
+			badness.counter <- badness.counter + 1
+			if(badness.counter > 99){
+				if(!is.finite(Prob[1])){													
+					stop("Initial probability of model is NEGATIVE INFINITY! Please attempt to initiate chain again.")
+				} else {
+					stop("the initial transformed covariance matrix is not positive definite! Either attempt to re-initialize MCMC, or increase the size of the delta shift")
+				}
 			}
+		}
 	} else {
 		stop("uh oh")
 	}
-					
-			if(!is.finite(Prob[1])){													
-				stop("Initial probability of model is NEGATIVE INFINITY! Please attempt to initiate chain again.")
-			}
+
 			
 	last.params <- list("population.coordinates" = population.coordinates[[1]],"admix.proportions" = admix.proportions[[1]],
 						"R" = R,"a0" = a0[1],"aD" = aD[1],"a2" = a2[1],"nugget" = nugget[,1],"delta" = delta,
