@@ -13,7 +13,7 @@ Update_admixture_target_location <- function(last.params){
 				transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																		last.params$projection.matrix)
 				LnL_freqs_prime <- total_likelihood_freqs(last.params$freqs,transformed_covariance_prime,last.params$loci)
-					if(exp(LnL_freqs_prime - last.params$LnL_freqs) >= runif(1)){
+					if(metropolis_ratio(LnL_freqs_prime,1,last.params$LnL_freqs,1)){
 						new.params$population.coordinates <- population.coordinates_prime
 						new.params$D <- D_prime
 						new.params$covariance <- covariance_prime
@@ -43,7 +43,7 @@ Update_admixture_source_location <- function(last.params){
 			transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																	last.params$projection.matrix)
 			LnL_freqs_prime <- total_likelihood_freqs(last.params$freqs,transformed_covariance_prime,last.params$loci)
-				if(exp(LnL_freqs_prime - last.params$LnL_freqs) >= runif(1)){
+				if(metropolis_ratio(LnL_freqs_prime,1,last.params$LnL_freqs,1)){
 					new.params$population.coordinates <- population.coordinates_prime
 					new.params$D <- D_prime
 					new.params$covariance <- covariance_prime
@@ -69,8 +69,7 @@ Update_admixture_proportion <- function(last.params){
 				transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																		last.params$projection.matrix)
 				LnL_freqs_prime <- total_likelihood_freqs(last.params$freqs,transformed_covariance_prime,last.params$loci)
-					if(exp((sum(prior_prob_admix_proportions_prime) + LnL_freqs_prime) - 
-								(sum(last.params$prior_prob_admix_proportions) + last.params$LnL_freqs)) >= runif(1)){
+					if(metropolis_ratio(LnL_freqs_prime,sum(prior_prob_admix_proportions_prime),last.params$LnL_freqs,sum(last.params$prior_prob_admix_proportions))){
 						new.params$admix.proportions <- admix.proportions_prime
 						new.params$prior_prob_admix_proportions <- prior_prob_admix_proportions_prime
 						new.params$admixed.covariance <- admixed.covariance_prime
@@ -94,7 +93,7 @@ Update_a0 <- function(last.params){
 			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions)
 			transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 			LnL_freqs_prime <- total_likelihood_freqs(last.params$freqs,transformed_covariance_prime,last.params$loci)
-				if(exp((prior_prob_alpha0_prime + LnL_freqs_prime) - (last.params$prior_prob_alpha0 + last.params$LnL_freqs)) >= runif(1)){
+				if(metropolis_ratio(LnL_freqs_prime,prior_prob_alpha0_prime,last.params$LnL_freqs,last.params$prior_prob_alpha0)){
 					new.params$a0 <- a0_prime
 					new.params$covariance <- covariance_prime
 					new.params$admixed.covariance <- admixed.covariance_prime
@@ -119,7 +118,7 @@ Update_a2 <- function(last.params){
 				admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions)
 				transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- total_likelihood_freqs(last.params$freqs,transformed_covariance_prime,last.params$loci)
-					if(exp((prior_prob_alpha2_prime + LnL_freqs_prime) - (last.params$prior_prob_alpha2 + last.params$LnL_freqs)) >= runif(1)){
+					if(metropolis_ratio(LnL_freqs_prime,prior_prob_alpha2_prime,last.params$LnL_freqs,last.params$prior_prob_alpha2)){
 						new.params$a2 <- a2_prime
 						new.params$covariance <- covariance_prime
 						new.params$admixed.covariance <- admixed.covariance_prime						
@@ -145,7 +144,7 @@ Update_nugget <- function(last.params){
 			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions)
 			transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 			LnL_freqs_prime <- total_likelihood_freqs(last.params$freqs,transformed_covariance_prime,last.params$loci)
-				if(exp((prior_prob_nugget_prime + LnL_freqs_prime) - (last.params$prior_prob_nugget+last.params$LnL_freqs)) >= runif(1)){
+				if(metropolis_ratio(LnL_freqs_prime, prior_prob_nugget_prime,last.params$LnL_freqs,last.params$prior_prob_nugget)){
 					new.params$nugget <- nugget_prime
 					new.params$covariance <- covariance_prime
 					new.params$admixed.covariance <- admixed.covariance_prime
@@ -158,6 +157,14 @@ Update_nugget <- function(last.params){
 	}
 	new.params$nugget_moves <- last.params$nugget_moves + 1
 	return(new.params)
+}
+
+metropolis_ratio <- function(LnL_prime,prior_prime,LnL,prior){
+	accept <- FALSE
+	if( exp((LnL_prime + prior_prime) - (LnL+prior)) >= runif(1) ){
+		accept <- TRUE
+	}
+	return(accept)
 }
 
 Prior_prob_alpha0 <- function(a0){
@@ -184,12 +191,12 @@ total_likelihood_freqs <- function(freqs,covmat,loci) {
 }
 	
 Covariance <- function(a0,a2,GeoDist,delta,nugget,mean.sample.sizes) {
-		nugget <- c(nugget,rep(0,nrow(GeoDist)/2))
-		inv.mean.sample.sizes <- c(1/mean.sample.sizes,rep(0,nrow(GeoDist)/2))
-		covariance <- (1/a0)*exp((-(GeoDist)^a2)-delta)
-			diag(covariance) <- 1/a0 + nugget + inv.mean.sample.sizes
-		return(covariance)
-	}
+	nugget <- c(nugget,rep(0,nrow(GeoDist)/2))
+	inv.mean.sample.sizes <- c(1/mean.sample.sizes,rep(0,nrow(GeoDist)/2))
+	covariance <- (1/a0)*exp((-(GeoDist)^a2)-delta)
+		diag(covariance) <- 1/a0 + nugget + inv.mean.sample.sizes
+	return(covariance)
+}
 
 admixed.Covariance <- function(covariance,admix.proportions){
 	# recover()
