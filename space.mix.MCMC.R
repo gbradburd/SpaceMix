@@ -207,11 +207,11 @@ Prior_prob_admix_proportions <- function(admix_proportions){
 }
 
 total_likelihood_freqs <- function(freqs,covmat,loci) {
-		cholcov <- chol(covmat)
-		invcholcov <- MASS::ginv(cholcov)
-		logsqrtdet <- sum(log(diag(cholcov)))
-		return(-(1/2)*(sum((crossprod(invcholcov,freqs))^2))-loci*logsqrtdet)
-	}
+	cholcov <- chol(covmat)
+	logsqrtdet <- sum(log(diag(cholcov)))
+	x <- backsolve(cholcov,freqs,transpose=TRUE)
+	return(-(1/2)*crossprod(as.vector(x))-loci*logsqrtdet)
+}
 	
 Covariance <- function(a0,aD,a2,GeoDist,delta,nugget,mean.sample.sizes) {
 		nugget <- c(nugget,rep(0,nrow(GeoDist)/2))
