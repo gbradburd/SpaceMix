@@ -68,7 +68,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 	for(x in 1:length(X.gridpoints)){
 		for(y in 1:length(Y.gridpoints)){
 				coords.prime[pop.to.update,] <- c(X.gridpoints[x],Y.gridpoints[y])
-				prior.prob.admix.target.location.array[x,y,] <- Prior_prob_admix_target_locations(coords.prime,last.params$observed.X.coordinates,last.params$observed.Y.coordinates,last.params$target.spatial.prior.scale)
+				prior.prob.admix.target.location.array[x,y,] <- Prior_prob_admix_target_locations(coords.prime[1:last.params$k,],last.params$observed.X.coordinates,last.params$observed.Y.coordinates,last.params$target.spatial.prior.scale)
 				tmp.cov <- Covariance(last.params$a0,
 									  last.params$aD,
 								  	  last.params$a2,
@@ -619,7 +619,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				mixing.diagn.freq,
 				gibbs.nugget.fineness=30,
 				gibbs.spatial.fineness=10,
-				gibbs.step.frequency = 1000,
+				gibbs.step.frequency = 5000,
 				savefreq,
 				directory=NULL,
                 prefix="",
@@ -846,3 +846,46 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 	}
     return(paste("Output",i,"runs to",paste(prefix,"MCMC_output*.Robj",sep=''),"."))
 }
+
+
+
+#Prepping Globetrotter Data (Hellenthal et al)
+a<-read.table("hellpopfreqs.txt.frq.strat",head=TRUE,nrow=150,as.is=TRUE)
+populations<-unique(a$CLST)
+npops<-length(populations)
+
+
+num.snps<-130084 ##found by wc -l on file
+
+read.this.many<-5e3
+all.MAC<-matrix(NA,nrow=num.snps,ncol=npops)
+all.sample.size<-matrix(NA,nrow=num.snps,ncol=npops)
+
+snp.info<-character()
+for(i in 1:floor((num.snps)/read.this.many)){
+print(i)
+my.snps<-read.table("hellpopfreqs.txt.frq.strat",skip=1+npops*(read.this.many*(i-1)), nrow=npops*read.this.many,as.is=TRUE)
+colnames(my.snps)<-colnames(a)
+
+MAC<-matrix(my.snps$MAC,ncol=npops,byrow=TRUE)
+sample.size<-matrix(my.snps$NCHROBS,ncol=npops,byrow=TRUE)
+
+these<-((read.this.many*(i-1)+1)):((read.this.many*i))
+all.MAC[these,]<-MAC
+all.sample.size[these,]<-sample.size
+snp.info<-rbind(snp.info,my.snps[,c("CHR","SNP")])
+}
+i=27
+my.snps<-read.table("hellpopfreqs.txt.frq.strat",skip=1+npops*(read.this.many*(i-1)),as.is=TRUE)
+colnames(my.snps)<-colnames(a)
+MAC<-matrix(my.snps$MAC,ncol=npops,byrow=TRUE)
+sample.size<-matrix(my.snps$NCHROBS,ncol=npops,byrow=TRUE)
+these<-((read.this.many*(i-1)+1)):((read.this.many*(i-1))+nrow(MAC))
+all.MAC[these,]<-MAC
+all.sample.size[these,]<-sample.size
+colnames(all.MAC)<-populations
+colnames(all.sample.size)<-populations
+snp.info<-rbind(snp.info,my.snps[,c("CHR","SNP")])
+
+save(file="hellpopfreqs.Robj",all.MAC,all.sample.size,snp.info)
+
