@@ -90,7 +90,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 	sampling.probs <- exp(post.prob.array-max(post.prob.array))/sum(exp(post.prob.array-max(post.prob.array)))
 	sampled.parameters.index <- which(post.prob.array == sample(post.prob.array,1,prob=sampling.probs),arr.ind=TRUE)
 	new.params$population.coordinates[pop.to.update,] <- c(X.gridpoints[sampled.parameters.index[1]],Y.gridpoints[sampled.parameters.index[2]])
-	new.params$prior_prob_admix_target_location <- prior.prob.admix.target.location.array[sampled.parameters.index]
+	new.params$prior_prob_admix_target_locations <- prior.prob.admix.target.location.array[sampled.parameters.index]
 	new.params$nugget[pop.to.update] <- nugget.gridpoints[sampled.parameters.index[3]]
 	new.params$prior_prob_nugget <- prior.prob.nugget.array[sampled.parameters.index]
 	new.params$D <- fields::rdist(new.params$population.coordinates)
