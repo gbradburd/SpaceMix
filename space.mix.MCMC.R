@@ -1,3 +1,5 @@
+#UPDATE FUNCTIONS ETC.
+if(TRUE){
 simulate.spacemix.dataset <- function(k,loci,admix.target,admix.source,admix.proportion,sim.a0,sim.aD,sim.a2,sample.sizes,nugget.option,generate.counts,boundary.option,filename){
 	# recover()
 	if(nugget.option == "sample.sizes" && generate.counts){
@@ -50,10 +52,10 @@ simulate.spacemix.dataset <- function(k,loci,admix.target,admix.source,admix.pro
 admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 	new.params <- last.params
 	pop.to.update <- sample(1:last.params$k,1)
-	x.min <- min(last.params$population.coordinates[1:last.params$k,1]) - diff(range(last.params$population.coordinates[last.params$k,1]))*0.15
-	x.max <- max(last.params$population.coordinates[1:last.params$k,1]) + diff(range(last.params$population.coordinates[last.params$k,1]))*0.15
-	y.min <- min(last.params$population.coordinates[1:last.params$k,2]) - diff(range(last.params$population.coordinates[last.params$k,2]))*0.15
-	y.max <- max(last.params$population.coordinates[1:last.params$k,2]) + diff(range(last.params$population.coordinates[last.params$k,2]))*0.15
+	x.min <- min(last.params$population.coordinates[1:last.params$k,1]) - diff(range(last.params$population.coordinates[1:last.params$k,1]))*0.15
+	x.max <- max(last.params$population.coordinates[1:last.params$k,1]) + diff(range(last.params$population.coordinates[1:last.params$k,1]))*0.15
+	y.min <- min(last.params$population.coordinates[1:last.params$k,2]) - diff(range(last.params$population.coordinates[1:last.params$k,2]))*0.15
+	y.max <- max(last.params$population.coordinates[1:last.params$k,2]) + diff(range(last.params$population.coordinates[1:last.params$k,2]))*0.15
 	X.gridpoints <- seq(x.min,x.max,length.out=last.params$X.grid.fineness)
 	Y.gridpoints <- seq(y.min,y.max,length=last.params$Y.grid.fineness)
 	nugget.gridpoints <- -log(seq(1e-10,1,length.out=last.params$nugget.grid.fineness))
@@ -596,7 +598,7 @@ get.diagn.step <- function(generation,mixing.diagn.freq){
 	}
 	return(diagn.step)
 }
-	
+}	
 	
 	
 MCMC <-function(model.option,				#no_movement, target, source, source_and_target
@@ -617,9 +619,9 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				printfreq,
 				samplefreq,
 				mixing.diagn.freq,
-				gibbs.nugget.fineness=30,
-				gibbs.spatial.fineness=10,
-				gibbs.step.frequency = 5000,
+				gibbs.nugget.fineness=50,
+				gibbs.spatial.fineness=50,
+				gibbs.step.frequency = 10000,
 				savefreq,
 				directory=NULL,
                 prefix="",
@@ -848,7 +850,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 }
 
 
-
+if(FALSE){
 #Prepping Globetrotter Data (Hellenthal et al)
 a<-read.table("hellpopfreqs.txt.frq.strat",head=TRUE,nrow=150,as.is=TRUE)
 populations<-unique(a$CLST)
@@ -888,4 +890,4 @@ colnames(all.sample.size)<-populations
 snp.info<-rbind(snp.info,my.snps[,c("CHR","SNP")])
 
 save(file="hellpopfreqs.Robj",all.MAC,all.sample.size,snp.info)
-
+}
