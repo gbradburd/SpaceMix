@@ -341,7 +341,7 @@ Prior_prob_admix_proportions <- function(admix_proportions){
 
 wishart.lnL <- function(sample.cov,par.cov,n){
 	A <- solve(par.cov)
-	lnL <- -0.5 * sum( A * sample.cov ) - (n/2)*log(det(par.cov))
+	lnL <- -0.5 * sum( A * sample.cov ) - (n/2)*determinant(par.cov,logarithm=TRUE)$modulus
 	return(lnL)
 }
 
