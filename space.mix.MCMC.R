@@ -62,7 +62,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 		nugget.gridpoints[which(nugget.gridpoints == 0)] <- 1e-5	
 	lnL.array <- array(0,dim=c(last.params$X.grid.fineness,last.params$Y.grid.fineness,last.params$nugget.grid.fineness))
 	prior.prob.nugget.array <- array(0,dim=c(last.params$X.grid.fineness,last.params$Y.grid.fineness,last.params$nugget.grid.fineness))
-	prior.prob.admix.target.location.array <- array(0,dim=c(last.params$X.grid.fineness,last.params$Y.grid.fineness,last.params$nugget.grid.fineness))
+	prior.prob.admix.target.locations.array <- array(0,dim=c(last.params$X.grid.fineness,last.params$Y.grid.fineness,last.params$nugget.grid.fineness))
 	post.prob.array <- array(0,dim=c(last.params$X.grid.fineness,last.params$Y.grid.fineness,last.params$nugget.grid.fineness))
 	coords.prime <- matrix(last.params$population.coordinates,nrow=2*last.params$k,ncol=2)
 	nugget.prime <- last.params$nugget
@@ -70,7 +70,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 	for(x in 1:length(X.gridpoints)){
 		for(y in 1:length(Y.gridpoints)){
 				coords.prime[pop.to.update,] <- c(X.gridpoints[x],Y.gridpoints[y])
-				prior.prob.admix.target.location.array[x,y,] <- Prior_prob_admix_target_locations(coords.prime[1:last.params$k,],last.params$observed.X.coordinates,last.params$observed.Y.coordinates,last.params$target.spatial.prior.scale)
+				prior.prob.admix.target.locations.array[x,y,] <- Prior_prob_admix_target_locations(coords.prime[1:last.params$k,],last.params$observed.X.coordinates,last.params$observed.Y.coordinates,last.params$target.spatial.prior.scale)
 				tmp.cov <- Covariance(last.params$a0,
 									  last.params$aD,
 								  	  last.params$a2,
@@ -83,28 +83,33 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 				transformed.covariance.prime <- transformed.Covariance(admixed.covariance.prime,last.params$projection.matrix)
 				lnL.array[x,y,z] <- wishart.lnL(last.params$sample.cov,transformed.covariance.prime/last.params$loci,last.params$loci)
 				prior.prob.nugget.array[x,y,z] <- Prior_prob_nugget(nugget.prime,last.params$mean.sample.sizes)
-				post.prob.array[x,y,z] <- lnL.array[x,y,z] + prior.prob.nugget.array[x,y,z] + prior.prob.admix.target.location.array[x,y,z]
 			}
 		}
 	}
-	sampling.probs <- exp(post.prob.array-max(post.prob.array))/sum(exp(post.prob.array-max(post.prob.array)))
-	sampled.parameters.index <- which(post.prob.array == sample(post.prob.array,1,prob=sampling.probs),arr.ind=TRUE)
-	new.params$population.coordinates[pop.to.update,] <- c(X.gridpoints[sampled.parameters.index[1]],Y.gridpoints[sampled.parameters.index[2]])
-	new.params$prior_prob_admix_target_locations <- prior.prob.admix.target.location.array[sampled.parameters.index]
-	new.params$nugget[pop.to.update] <- nugget.gridpoints[sampled.parameters.index[3]]
-	new.params$prior_prob_nugget <- prior.prob.nugget.array[sampled.parameters.index]
-	new.params$D <- fields::rdist(new.params$population.coordinates)
-	new.params$covariance <- Covariance(last.params$a0,last.params$aD,last.params$a2,new.params$D)
-	new.params$admixed.covariance <- admixed.Covariance(new.params$covariance,last.params$admix.proportions,new.params$nugget)
-	new.params$transformed_covariance <- transformed.Covariance(new.params$admixed.covariance,last.params$projection.matrix)
-	new.params$LnL_freqs <- lnL.array[sampled.parameters.index]
-	new.params$admix_target_location_moves[pop.to.update] <- new.params$admix_target_location_moves[pop.to.update] + 1
-	new.params$admix_target_location_accept[pop.to.update] <- new.params$admix_target_location_accept[pop.to.update] + 1
-	new.params$admix_target_location_accept_rate[pop.to.update] <- new.params$admix_target_location_accept[pop.to.update]/new.params$admix_target_location_moves[pop.to.update]
-	new.params$nugget_moves[pop.to.update] <- new.params$nugget_moves[pop.to.update] + 1
-	new.params$nugget_accept[pop.to.update] <- new.params$nugget_accept[pop.to.update] + 1
-	new.params$nugget_accept_rate[pop.to.update] <- new.params$nugget_accept[pop.to.update]/new.params$nugget_moves[pop.to.update]
-	return(new.params)
+	post.prob.array <- lnL.array + prior.prob.nugget.array + prior.prob.admix.target.locations.array
+	current.lnl.pr <- last.params$LnL_freqs + last.params$prior_prob_nugget + last.params$prior_prob_admix_proportions
+	tmp.prob <- c(post.prob.array,current.lnl.pr)
+	sampling.probs <- exp(tmp.prob-max(tmp.prob))/sum(exp(tmp.prob-max(tmp.prob)))
+	tmp.sampled.index <- sample(c(1:length(sampling.probs)),1,prob=sampling.probs)
+	if(tmp.sampled.index != length(sampling.probs)){
+		sampled.parameters.index <- which(post.prob.array == post.prob.array[tmp.sampled.index],arr.ind=TRUE)
+		new.params$population.coordinates[pop.to.update,] <- c(X.gridpoints[sampled.parameters.index[1]],Y.gridpoints[sampled.parameters.index[2]])
+		new.params$prior_prob_admix_target_locations <- prior.prob.admix.target.locations.array[sampled.parameters.index]
+		new.params$nugget[pop.to.update] <- nugget.gridpoints[sampled.parameters.index[3]]
+		new.params$prior_prob_nugget <- prior.prob.nugget.array[sampled.parameters.index]
+		new.params$D <- fields::rdist(new.params$population.coordinates)
+		new.params$covariance <- Covariance(last.params$a0,last.params$aD,last.params$a2,new.params$D)
+		new.params$admixed.covariance <- admixed.Covariance(new.params$covariance,last.params$admix.proportions,new.params$nugget)
+		new.params$transformed_covariance <- transformed.Covariance(new.params$admixed.covariance,last.params$projection.matrix)
+		new.params$LnL_freqs <- lnL.array[sampled.parameters.index]
+		new.params$admix_target_location_moves[pop.to.update] <- new.params$admix_target_location_moves[pop.to.update] + 1
+		new.params$admix_target_location_accept[pop.to.update] <- new.params$admix_target_location_accept[pop.to.update] + 1
+		new.params$admix_target_location_accept_rate[pop.to.update] <- new.params$admix_target_location_accept[pop.to.update]/new.params$admix_target_location_moves[pop.to.update]
+		new.params$nugget_moves[pop.to.update] <- new.params$nugget_moves[pop.to.update] + 1
+		new.params$nugget_accept[pop.to.update] <- new.params$nugget_accept[pop.to.update] + 1
+		new.params$nugget_accept_rate[pop.to.update] <- new.params$nugget_accept[pop.to.update]/new.params$nugget_moves[pop.to.update]
+	}
+		return(new.params)
 }
 
 Update_admixture_target_location <- function(last.params){
