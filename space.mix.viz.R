@@ -287,10 +287,25 @@ visualize.admix.posterior <- function(sim,hgdp,input.data.object,MCMC.output,wor
 		
 		visualize.admix.posterior(	sim = FALSE,
 									hgdp = TRUE,
-									input.data.object = "~/Desktop/hgdp15.1/hgdp.space.data.Robj",
-									MCMC.output = "~/Desktop/hgdp15.1/hgdp_15.1space_MCMC_output1.Robj",
+									input.data.object = "~/Desktop/sim16/hgdp16.4/hgdp.space.data.Robj",
+									MCMC.output = "~/Desktop/sim16/hgdp16.4/hgdp_16.4space_MCMC_output1.Robj",
+									world.map = "big", #c(-20,150,0,68)
+									populations = "ALL",
+									track.pops = TRUE,
+									thinning = 20,
+									arrows = FALSE,
+									target.arrows = TRUE,
+									source.arrows = TRUE,
+									show.inference = TRUE,
+									show.sims = FALSE,
+									procrustes = FALSE)
+
+		visualize.admix.posterior(	sim = FALSE,
+									hgdp = TRUE,
+									input.data.object = "~/Desktop/hgdp15.2/hgdp.space.data.Robj",
+									MCMC.output = "~/Desktop/hgdp15.2/hgdp_15.2space_MCMC_output1.Robj",
 									world.map = c(-20,150,8,68),
-									populations = "Uygur",
+									populations = "ALL",
 									track.pops = TRUE,
 									thinning = 20,
 									arrows = FALSE,
@@ -299,8 +314,8 @@ visualize.admix.posterior <- function(sim,hgdp,input.data.object,MCMC.output,wor
 									show.inference = TRUE,
 									show.sims = FALSE,
 									procrustes = TRUE)
-
-
+									
+									
 		load("~/Desktop/hgdp15.1/hgdp.space.data.Robj")
 		load("~/Desktop/hgdp15.1/hgdp_15.1space_MCMC_output1.Robj")
 			plot(last.params$admix.proportions,type="n")
@@ -312,8 +327,78 @@ visualize.admix.posterior <- function(sim,hgdp,input.data.object,MCMC.output,wor
 			text(last.params$admix.proportions,
 					labels=HGDP.bedassle.data$hgdp.metadata$Population)
 
+			plot(last.params$nugget,type="n")
+			text(last.params$nugget,
+					labels=HGDP.bedassle.data$hgdp.metadata$Population)
 
 		posterior.covariance.fit("~/Desktop/hgdp15.1/hgdp_15.1space_MCMC_output1.Robj",delay=0.01,halt=446)
 		posterior.covariance.fit("~/Desktop/Dropbox/space.mix/wu_tang/sims/sim14/sims14.5/sims_14.5space_MCMC_output1.Robj",halt=20)
+
+
+########################################
+#	sims
+########################################
+
+		visualize.admix.posterior(	sim = TRUE,
+									hgdp = FALSE,
+									input.data.object = "~/Desktop/sim16/sim16.1/spacemix_sim_data_14.5.Robj",
+									MCMC.output = "~/Desktop/sim16/sim16.1/sims_16.1space_MCMC_output1.Robj",
+									world.map = "little",
+									populations = "ALL",
+									track.pops = TRUE,
+									thinning = 20,
+									arrows = TRUE,
+									target.arrows = TRUE,
+									source.arrows = TRUE,
+									show.inference = TRUE,
+									show.sims = FALSE,
+									procrustes = TRUE)
+
+	visualize.admix.posterior(	sim = TRUE,
+									hgdp = FALSE,
+									input.data.object = "~/Desktop/sim16/sim16.1/spacemix_sim_data_14.5.Robj",
+									MCMC.output = "~/Desktop/sim16/sim16.2/sims_16.1space_MCMC_output1.Robj",
+									world.map = "little",
+									populations = "ALL",
+									track.pops = TRUE,
+									thinning = 20,
+									arrows = TRUE,
+									target.arrows = TRUE,
+									source.arrows = TRUE,
+									show.inference = TRUE,
+									show.sims = FALSE,
+									procrustes = TRUE)
+
+	visualize.admix.posterior(	sim = TRUE,
+									hgdp = FALSE,
+									input.data.object = "~/Desktop/sim16/sim16.1/spacemix_sim_data_14.5.Robj",
+									MCMC.output = "~/Desktop/sim16/sim16.3/sims_16.1space_MCMC_output1.Robj",
+									world.map = "little",
+									populations = "ALL",
+									track.pops = TRUE,
+									thinning = 20,
+									arrows = TRUE,
+									target.arrows = TRUE,
+									source.arrows = TRUE,
+									show.inference = TRUE,
+									show.sims = FALSE,
+									procrustes = TRUE)
+
+	visualize.admix.posterior(	sim = TRUE,
+									hgdp = FALSE,
+									input.data.object = "~/Desktop/sim16/sim16.1/spacemix_sim_data_14.5.Robj",
+									MCMC.output = "~/Desktop/sim16/sim16.4/sims_16.1space_MCMC_output1.Robj",
+									world.map = "little",
+									populations = "ALL",
+									track.pops = TRUE,
+									thinning = 20,
+									arrows = FALSE,
+									target.arrows = TRUE,
+									source.arrows = TRUE,
+									show.inference = TRUE,
+									show.sims = FALSE,
+									procrustes = TRUE)									
+
+	posterior.covariance.fit("~/Desktop/sim16/sim16.3/sims_16.1space_MCMC_output1.Robj",halt=10)
 
 
