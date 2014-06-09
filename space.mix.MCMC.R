@@ -126,7 +126,7 @@ Update_admixture_target_location <- function(last.params){
 																						last.params$target.spatial.prior.scale)
 		D_prime <- fields::rdist(population.coordinates_prime)
 		covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
-		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget)
+		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k)
 				transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																		last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
@@ -144,7 +144,7 @@ Update_admixture_target_location <- function(last.params){
 	new.params$admix_target_location_accept_rate[pop.to.update] <- new.params$admix_target_location_accept[pop.to.update]/new.params$admix_target_location_moves[pop.to.update]
 	return(new.params)	
 }
-	
+
 Update_admixture_source_location <- function(last.params){
 	 # recover()
 	new.params <- last.params
