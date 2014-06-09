@@ -756,9 +756,10 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		#INITIALIZE MCMC
 				Prob[1] <- -Inf
 				covariance <- matrix(0,nrow=k*2,ncol=k*2)
+  				admixed.covariance <- matrix(0,nrow=k,ncol=k)
 				badness.counter <- 0
 
-			while(Prob[1] == -Inf | !matrixcalc::is.positive.definite(covariance) && badness.counter < 100){
+			while(Prob[1] == -Inf | !matrixcalc::is.positive.definite(admixed.covariance) && badness.counter < 100){
 						nugget[,1] <- rexp(k,rate = spacemix.data$mean.sample.sizes)
 						a0[1] <- rexp(1,1/100)
 						aD[1] <- rexp(1,1)
@@ -822,6 +823,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 											observed.X.coordinates = observed.X.coordinates,observed.Y.coordinates = observed.Y.coordinates,
 											target.spatial.prior.scale = target.spatial.prior.scale,source.spatial.prior.scale = source.spatial.prior.scale,
 											centroid = centroid,gibbs.spatial.fineness = gibbs.spatial.fineness,gibbs.nugget.fineness = gibbs.nugget.fineness)
+		last.ngen <- 0
 	} else {
 		load(continuing.params)
 		a0_diagn <- continuing.params$a0_diagn
@@ -913,6 +915,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 											centroid = continuing.params$centroid,
 											gibbs.spatial.fineness = continuing.params$gibbs.spatial.fineness,
 											gibbs.nugget.fineness = continuing.params$gibbs.nugget.fineness)
+		last.ngen <- continuing.params$last.ngen
 	}
 	
 	#Run the MCMC
@@ -970,7 +973,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 			admix_proportions_diagn[,diagn.step] <- new.params$admix_proportions_accept_rate
 		
 		if(i%%mixing.diagn.freq == 0){
-			n <- i %/% mixing.diagn.freq
+			n <- (i + last.ngen) %/% mixing.diagn.freq
 			new.params$a0.lstp <- update.lstp(n,new.params$a0.lstp,mean(a0_diagn))
 			new.params$aD.lstp <- update.lstp(n,new.params$aD.lstp,mean(aD_diagn))
 			new.params$a2.lstp <- update.lstp(n,new.params$a2.lstp,mean(a2_diagn))
@@ -996,7 +999,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				admix_source_location_accept_rate,admix_target_location_accept_rate,admix_proportions_accept_rate,a0_accept_rate,aD_accept_rate,a2_accept_rate,nugget_accept_rate,
 				admix_source_location_lstp,admix_proportions_lstp,a0_lstp,aD_lstp,a2_lstp,nugget_lstp,
 				admix_target_location_lstp,a0_diagn,aD_diagn,a2_diagn,nugget_diagn,
-				admix_target_location_diagn,admix_source_location_diagn,admix_proportions_diagn,target.spatial.prior.scale,source.spatial.prior.scale,
+				admix_target_location_diagn,admix_source_location_diagn,admix_proportions_diagn,target.spatial.prior.scale,source.spatial.prior.scale,last.ngen,
 				file=paste(prefix,sprintf("space_MCMC_output%d.Robj",1),sep=''))
 		}
 	}
@@ -1048,9 +1051,48 @@ make.continuing.params <- function(MCMC.output,file.name){
 									"admix.source.location.lstp" = admix.source.location.lstp,"admix.proportions.lstp" = admix.proportions.lstp,
 									"a0_diagn" = a0_diagn,"a2_diagn" = a2_diagn,"aD_diagn" = aD_diagn,"admix_proportions_diagn" = admix_proportions_diagn,
 									"admix_source_location_diagn" = admix_source_location_diagn,"admix_target_location_diagn" = admix_target_location_diagn,
-									"nugget_diagn" = nugget_diagn)
+									"nugget_diagn" = nugget_diagn, "last.ngen" = ngen)
 	save(continuing.params,file=file.name)
 	})
+	return(0)
+}
+
+drop.objects.pre.link.up <- function(object,length){
+	if(class(object)=="matrix"){
+		object.dim <- dim(object)
+	} else {
+		object.dim <- length(object)
+	}
+	object.drop <- !any(grepl(length,object.dim))
+	return(object.drop)
+}
+
+link.up.posteriors <- function(MCMC.output1,MCMC.output2,linked.up.output.file.name){
+	recover()
+	load(MCMC.output1)
+		rm(list = setdiff(unique(c(	ls(pattern="diagn"),
+							ls(pattern="last.params"),
+							objects()[sapply(mget(objects()), drop.objects.pre.link.up,length=ngen/samplefreq)])),c("MCMC.output2","linked.up.output.file.name")))
+    parameters <- objects()
+    for(i in 1:length(parameters)){
+        assign(sprintf("tmp.%s", parameters[i]), get(parameters[i]))
+    }
+    load(MCMC.output2)
+    for (i in 1:length(parameters)) {
+    	if(class(get(parameters[i])) == "numeric"){
+    		assign(parameters[i],c(get(sprintf("tmp.%s", 
+                    parameters[i])), get(parameters[i])))
+    	} else if(class(get(parameters[i])) == "matrix"){
+    		assign(parameters[i],cbind(get(sprintf("tmp.%s", 
+                    parameters[i])), get(parameters[i])))
+    	} else if(class(get(parameters[i])) == "list"){
+    		assign(parameters[i],c(get(sprintf("tmp.%s", 
+                    parameters[i])), get(parameters[i])))
+    	}
+    }
+    rm(list = objects(pattern = "tmp."))
+    save(list = setdiff(ls(all.names = TRUE), "linked.up.output.file.name"), 
+        file = paste(linked.up.output.file.name, ".Robj", sep = ""))
 	return(0)
 }
 
@@ -1065,29 +1107,97 @@ get.conditional.mean <- function(covariance,pop.to.sample,observations,drop.opti
 	return(mu_bar)
 }
 
-get.spatial.fstat <- function(sampled.locations,proposed.location,observations,focal.population,covariance=NULL,a0,aD,a2,focal.population.mean=NULL,get.focal.population.mean=NULL){
-	# recover()
-	k <- nrow(sampled.locations)
-	if(is.null(covariance)){
-		covariance <- Covariance(a0,aD,a2,fields::rdist(sampled.locations))
+get.mean.centering.matrix <- function(focal.pop,k,mean.sample.sizes=NULL){
+	if(is.null(mean.sample.sizes)){
+		mean.centering.matrix <- matrix(-1/(k-1),nrow=k,ncol=k,byrow=TRUE)
+			diag(mean.centering.matrix) <- (k-2)/(k-1)
+		mean.centering.matrix[,focal.pop] <- c(rep(0,focal.pop-1),1,rep(0,k-focal.pop))
+	} else {
+	mean.centering.matrix <- diag(k) - matrix(mean.sample.sizes/(sum(mean.sample.sizes[-focal.pop])),nrow=k,ncol=k,byrow=TRUE)
+		mean.centering.matrix[,focal.pop] <- c(rep(0,focal.pop-1),1,rep(0,k-focal.pop))
 	}
-		covariance.no.focal <- matrix(0,nrow=k,ncol=k)
-		covariance.no.focal[1:(k-1),1:(k-1)] <- covariance[-focal.population,-focal.population]
-	if(is.null(focal.population.mean) && is.null(get.focal.population.mean)){
-		stop("you must either specify the focal population conditional mean or you must estimate it")
-	}
-	if(!is.null(get.focal.population.mean)){
-		focal.population.mean <- get.conditional.mean(covariance,focal.population,observations,drop.option=TRUE)
-	}
-	coords <- rbind(sampled.locations[-focal.population,],proposed.location)
-	tmp.D <- fields::rdist(coords[k,1:2,drop=FALSE],coords)
-	tmp.cov <- Covariance(a0,aD,a2,tmp.D)
-	covariance.no.focal[k,] <- tmp.cov
-	covariance.no.focal[,k] <- tmp.cov
-	spatial.location.mean <- get.conditional.mean(covariance.no.focal,k,observations[-focal.population,])
-	spatial.fstat <- mean((observations[focal.population,]-focal.population.mean)*spatial.location.mean)
-	return(spatial.fstat)
+	return(mean.centering.matrix)		
 }
+
+get.uprank.mean.centering.matrix <- function(focal.pop,k,mean.sample.sizes=NULL){
+	if(is.null(mean.sample.sizes)){
+		mean.centering.matrix <- matrix(-1/(k-1),nrow=k,ncol=k,byrow=TRUE)
+			diag(mean.centering.matrix) <- (k-2)/(k-1)
+		mean.centering.matrix <- cbind(
+									rbind(mean.centering.matrix,
+											rep(-1/(k-1),k)),
+									c(rep(0,k),1))
+		mean.centering.matrix[,focal.pop] <- c(rep(0,focal.pop-1),1,rep(0,(k+1)-focal.pop))
+	} else {
+	mean.centering.matrix <- diag(k) - matrix(mean.sample.sizes/(sum(mean.sample.sizes[-focal.pop])),nrow=k,ncol=k,byrow=TRUE)
+	mean.centering.matrix <- 	cbind(
+									rbind(mean.centering.matrix,
+											-mean.sample.sizes/(sum(mean.sample.sizes[-focal.pop]))),
+									c(rep(0,k),1))
+		mean.centering.matrix[,focal.pop] <- c(rep(0,focal.pop-1),1,rep(0,(k+1)-focal.pop))
+	}
+	return(mean.centering.matrix)		
+}
+
+calculate.fstat <- function(focal.population.observations,focal.pop.conditional.mean,admix.source.observations){
+	fstat <- ((focal.population.observations - focal.pop.conditional.mean) %*% admix.source.observations)#/length(focal.population.observations)
+	fstat <- fstat / sqrt(var(c(focal.population.observations - focal.pop.conditional.mean))*var(c(admix.source.observations)))
+	return(fstat)
+}
+
+get.fstat.pop <- function(focal.pop,source.pop,observations,covariance,mean.sample.sizes=NULL){
+	k <- nrow(observations)
+	mean.center.matrix <- get.mean.centering.matrix(focal.pop,k,mean.sample.sizes)
+	mean.centered.covariance <- mean.center.matrix %*% covariance %*% t(mean.center.matrix)
+	mean.centered.observations <- mean.center.matrix %*% observations
+	pop.2.drop <- sample(c(1:k)[-c(focal.pop,source.pop)],1)
+	if(pop.2.drop < focal.pop){
+		focal.pop <- focal.pop - 1 
+	}
+	if(pop.2.drop < source.pop){
+		source.pop <- source.pop - 1 
+	}
+	mean.centered.covariance <- mean.centered.covariance[-pop.2.drop,-pop.2.drop]
+	mean.centered.observations <- mean.centered.observations[-pop.2.drop,]
+	focal.pop.conditional.mean <- get.conditional.mean(mean.centered.covariance,focal.pop,mean.centered.observations,drop.option=1)
+	fstat <- calculate.fstat(mean.centered.observations[focal.pop,],focal.pop.conditional.mean,mean.centered.observations[source.pop,])
+	return(fstat)
+}
+
+get.focal.conditional.mean.fstat.location <- function(focal.pop,covariance,observations,mean.sample.sizes=NULL){
+	k <- nrow(observations)
+	mean.center.matrix <- get.mean.centering.matrix(focal.pop,k,mean.sample.sizes)
+	mean.centered.covariance <- mean.center.matrix %*% covariance %*% t(mean.center.matrix)
+	mean.centered.observations <- mean.center.matrix %*% observations
+	dropped.focal.pop <- focal.pop
+	pop.2.drop <- sample(c(1:k)[-c(focal.pop)],1)
+	if(pop.2.drop < focal.pop){
+		dropped.focal.pop <- focal.pop - 1 
+	}
+	dropped.mean.centered.covariance <- mean.centered.covariance[-pop.2.drop,-pop.2.drop]
+	dropped.mean.centered.observations <- mean.centered.observations[-pop.2.drop,]
+	focal.pop.conditional.mean <- get.conditional.mean(dropped.mean.centered.covariance,dropped.focal.pop,dropped.mean.centered.observations,drop.option=1)
+	output <- list("mean.centered.observations" = mean.centered.observations,"focal.pop.conditional.mean" = focal.pop.conditional.mean)
+	return(output)
+}
+
+get.fstat.location <- function(focal.pop,source.location,all.locations,covariance,observations,a0,aD,a2,mean.sample.sizes=NULL){
+	# recover()
+	prelims <- get.focal.conditional.mean.fstat.location(focal.pop,covariance,observations,mean.sample.sizes)
+	focal.pop.conditional.mean <- prelims$focal.pop.conditional.mean
+	mean.centered.observations <- prelims$mean.centered.observations
+	spatial.covariance <- Covariance(a0,aD,a2,fields::rdist(rbind(all.locations,source.location)))
+	mean.center.matrix <- get.uprank.mean.centering.matrix(focal.pop,k,mean.sample.sizes)
+		mean.centered.spatial.covariance <- mean.center.matrix %*% spatial.covariance %*% t(mean.center.matrix)
+	mean.centered.spatial.covariance <- mean.centered.spatial.covariance[-focal.pop,-focal.pop]
+	source.location.conditional.mean <- get.conditional.mean(mean.centered.spatial.covariance,k,mean.centered.observations[-focal.pop,])
+	fstat <- calculate.fstat(mean.centered.observations[focal.pop,1:ncol(mean.centered.observations),drop=FALSE],
+								focal.pop.conditional.mean,
+								t(source.location.conditional.mean))
+	return(fstat)
+}
+
+
 
 procrusteez <- function(obs.locs,target.locs,k,source.locs = NULL,option){
 	# recover()
@@ -1210,4 +1320,82 @@ save(file="hellpopfreqs.Robj",all.MAC,all.sample.size,snp.info)
 		# admix_proportions_lstp[,1] <- continuing.params$admix.proportions.lstp
 
 }
-	
+
+if(FALSE){
+get.spatial.fstat <- function(focal.pop,observations,source.pop,covariance=NULL,focal.pop.conditional.mean=NULL){
+	if(is.null(focal.pop.conditional.mean)){
+		if(is.null(covariance)){
+			stop("you must specify a covariance matrix to calculate the conditional mean")
+		}
+		mean.centering.matrix <- get.mean.centering.matrix(focal.pop,nrow(observations))
+		mean.centered.observations <- mean.centering.matrix %*% observations
+		mean.centered.covariance <- mean.centering.matrix %*% covariance %*% t(mean.centering.matrix)
+	focal.pop.conditional.mean <- get.conditional.mean(mean.centered.covariance,focal.pop,mean.centered.observations,drop.option=1)
+	}
+	fstat <- calculate.fstat(mean.centered.observations[focal.pop,],focal.pop.conditional.mean,mean.centered.observations[source.pop,])
+	return(fstat)
+}
+
+get.all.spatial.fstat <- function(focal.pop,observations,covariance,focal.pop.conditional.mean){
+	mean.centering.matrix <- get.mean.centering.matrix(focal.pop,nrow(observations))
+	mean.centered.observations <- mean.centering.matrix %*% observations
+	mean.centered.covariance <- mean.centering.matrix %*% covariance %*% t(mean.centering.matrix)
+	focal.pop.conditional.mean <- get.conditional.mean(mean.centered.covariance,focal.pop,mean.centered.observations,drop.option=1)
+	fstat <- numeric(nrow(observations)-1)
+	for(i in 1:length(fstat)){
+		fstat[i] <- calculate.fstat(mean.centered.observations[focal.pop,],focal.pop.conditional.mean,mean.centered.observations[i,])
+	}
+	return(fstat)
+}
+
+# # get.spatial.fstat <- function(sampled.locations,proposed.location,observations,focal.population,covariance=NULL,a0,aD,a2,focal.population.mean=NULL,get.focal.population.mean=NULL){
+	# # recover()
+	# k <- nrow(sampled.locations)
+	# if(is.null(covariance)){
+		# covariance <- Covariance(a0,aD,a2,fields::rdist(sampled.locations))
+	# }
+		# covariance.no.focal <- matrix(0,nrow=k,ncol=k)
+		# covariance.no.focal[1:(k-1),1:(k-1)] <- covariance[-focal.population,-focal.population]
+	# if(is.null(focal.population.mean) && is.null(get.focal.population.mean)){
+		# stop("you must either specify the focal population conditional mean or you must estimate it")
+	# }
+	# if(!is.null(get.focal.population.mean)){
+		# focal.population.mean <- get.conditional.mean(covariance,focal.population,observations,drop.option=TRUE)
+	# }
+	# coords <- rbind(sampled.locations[-focal.population,],proposed.location)
+	# tmp.D <- fields::rdist(coords[k,1:2,drop=FALSE],coords)
+	# tmp.cov <- Covariance(a0,aD,a2,tmp.D)
+	# covariance.no.focal[k,] <- tmp.cov
+	# covariance.no.focal[,k] <- tmp.cov
+	# spatial.location.mean <- get.conditional.mean(covariance.no.focal,k,observations[-focal.population,])
+	# spatial.fstat <- mean((observations[focal.population,]-focal.population.mean)*spatial.location.mean)
+	# return(spatial.fstat)
+# }
+get.mean.centering.matrix2 <- function(focal.pop,k){
+	mean.centering.matrix <- matrix(-1/(k-1),nrow=(k),ncol=k,byrow=TRUE)
+		diag(mean.centering.matrix) <- (k-2)/(k-1)
+		mean.centering.matrix[,focal.pop] <- c(rep(0,focal.pop-1),1,rep(0,k-focal.pop))
+	return(mean.centering.matrix)		
+}
+
+get.fstat.pop2 <- function(focal.pop,source.pop,observations,covariance,mean.sample.sizes){
+	k <- nrow(observations)
+	mean.center.matrix <- get.mean.centering.matrix(focal.pop,k)
+	mean.centered.covariance <- mean.center.matrix %*% covariance %*% t(mean.center.matrix)
+	mean.centered.observations <- mean.center.matrix %*% observations
+	pop.2.drop <- sample(c(1:k)[-c(focal.pop,source.pop)],1)
+	if(pop.2.drop < focal.pop){
+		focal.pop <- focal.pop - 1 
+	}
+	if(pop.2.drop < source.pop){
+		source.pop <- source.pop - 1 
+	}
+	mean.centered.covariance <- mean.centered.covariance[-pop.2.drop,-pop.2.drop]
+	mean.centered.observations <- mean.centered.observations[-pop.2.drop,]
+	focal.pop.conditional.mean <- get.conditional.mean(mean.centered.covariance,focal.pop,mean.centered.observations,drop.option=1)
+	fstat <- calculate.fstat(mean.centered.observations[focal.pop,],focal.pop.conditional.mean,mean.centered.observations[source.pop,])
+	return(fstat)
+}
+
+}
+
