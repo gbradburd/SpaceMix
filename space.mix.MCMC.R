@@ -131,9 +131,8 @@ Update_admixture_target_location <- function(last.params){
 																						last.params$observed.Y.coordinates,
 																						last.params$target.spatial.prior.scale)
 		D_prime <- fields::rdist(population.coordinates_prime[pop.to.update,1:2,drop=FALSE], population.coordinates_prime)
-		covariance_prime <- last.params$covariance
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
-		covariance_prime <- update.matrix(covariance_prime,pop.to.update,tmp.covariance_prime)
+		covariance_prime <- update.matrix(last.params$covariance,pop.to.update,tmp.covariance_prime)
 		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k)
 				transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																		last.params$projection.matrix)
@@ -165,10 +164,9 @@ Update_admixture_source_location <- function(last.params){
 	prior_prob_admix_source_locations_prime <- Prior_prob_admix_source_locations(population.coordinates_prime[(last.params$k+1):(2*last.params$k),],
 																					last.params$centroid,
 																					last.params$source.spatial.prior.scale)
-		D_prime <- fields::rdist(population.coordinates_prime[pop.to.update,1:2,drop=FALSE], population.coordinates_prime)
-		covariance_prime <- last.params$covariance
+		D_prime <- fields::rdist(population.coordinates_prime[ghost.to.update,1:2,drop=FALSE], population.coordinates_prime)
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
-		covariance_prime <- update.matrix(covariance_prime,pop.to.update,tmp.covariance_prime)
+		covariance_prime <- update.matrix(last.params$covariance,ghost.to.update,tmp.covariance_prime)
 		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k)
 			transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																	last.params$projection.matrix)
@@ -176,7 +174,7 @@ Update_admixture_source_location <- function(last.params){
 				if(metropolis_ratio(LnL_freqs_prime,prior_prob_admix_source_locations_prime,last.params$LnL_freqs,last.params$prior_prob_admix_source_locations)){
 					new.params$population.coordinates <- population.coordinates_prime
 					new.params$prior_prob_admix_source_locations <- prior_prob_admix_source_locations_prime
-					new.params$D <- update.matrix(new.params$D,pop.to.update,D_prime)
+					new.params$D <- update.matrix(new.params$D,ghost.to.update,D_prime)
 					new.params$covariance <- covariance_prime
 					new.params$admixed.covariance <- admixed.covariance_prime
 					new.params$transformed_covariance <- transformed_covariance_prime
@@ -752,8 +750,8 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		admix_target_location_diagn <- matrix(0,nrow=k,ncol=mixing.diagn.freq)
 		admix_source_location_diagn <- matrix(0,nrow=k,ncol=mixing.diagn.freq)
 		admix_proportions_diagn <- matrix(0,nrow=k,ncol=mixing.diagn.freq)
-		#
-		seed <- sample(111:999,1)
+		
+		seed <- sample(0:1e6,1)
 			save(seed,file=paste(prefix,"_seed.Robj",sep=''))
 		set.seed(seed)
 	}
@@ -765,7 +763,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
   				admixed.covariance <- matrix(0,nrow=k,ncol=k)
 				badness.counter <- 0
 
-			while(Prob[1] == -Inf | !matrixcalc::is.positive.definite(admixed.covariance) && badness.counter < 100){
+			while(Prob[1] == -Inf | any(eigen(admixed.covariance)$values<0) && badness.counter < 100){
 						nugget[,1] <- rexp(k,rate = spacemix.data$mean.sample.sizes)
 						a0[1] <- rexp(1,1/100)
 						aD[1] <- rexp(1,1)
