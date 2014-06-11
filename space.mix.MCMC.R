@@ -1,10 +1,7 @@
 #UPDATE FUNCTIONS ETC.
 if(TRUE){
-simulate.spacemix.dataset <- function(k,loci,admix.target,admix.source,admix.proportion,sim.a0,sim.aD,sim.a2,sample.sizes,nugget.option,generate.counts,boundary.option,filename){
-	# recover()
-	if(nugget.option == "sample.sizes" && generate.counts){
-		stop("you are double-dipping your nugget!")
-	}
+simulate.spacemix.dataset <- function(k,loci,admix.target,admix.source,admix.proportion,sim.a0,sim.aD,sim.a2,sample.sizes,generate.counts,boundary.option,filename){
+	#recover()
 	#set random seed
 		random.seed <- sample(100:999,1)
 			set.seed(random.seed)
@@ -18,14 +15,10 @@ simulate.spacemix.dataset <- function(k,loci,admix.target,admix.source,admix.pro
 		mean.sample.sizes <- rowMeans(sample.sizes)
 		sim.covariance <- Covariance(sim.a0,sim.aD,sim.a2,sim.D)
 	#generate admixed covariance matrix
-		if(nugget.option == "none"){
-			sim.nugget <- numeric(k)
-		} else if(nugget.option == "sample.sizes"){
-			sim.nugget <- 1/mean.sample.sizes
-		}
+		sim.nugget <- numeric(k)
 		sim.admix.proportions <- numeric(k)
 			sim.admix.proportions[admix.target] <- admix.proportion
-		sim.admixed.covariance <- admixed.Covariance(sim.covariance,sim.admix.proportions,sim.nugget,k)
+		sim.admixed.covariance <- admixed.Covariance(sim.covariance,sim.admix.proportions,sim.nugget,k,1/mean.sample.sizes)
 	#simulate MVN allele frequencies + counts
 		sim.MVN.draws <- t(MASS::mvrnorm(n = loci, mu = numeric(k), Sigma = sim.admixed.covariance))
 		sim.allele.freqs <- sim.MVN.draws + 0.5
@@ -79,10 +72,10 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 				covariance.prime[,pop.to.update] <- tmp.cov
 			for(z in 1:length(nugget.gridpoints)){
 				nugget.prime[pop.to.update] <- nugget.gridpoints[z]
-				admixed.covariance.prime <- admixed.Covariance(covariance.prime,last.params$admix.proportions,nugget.prime,last.params$k)
+				admixed.covariance.prime <- admixed.Covariance(covariance.prime,last.params$admix.proportions,nugget.prime,last.params$k,last.params$inv.mean.sample.sizes)
 				transformed.covariance.prime <- transformed.Covariance(admixed.covariance.prime,last.params$projection.matrix)
 				lnL.array[x,y,z] <- wishart.lnL(last.params$sample.cov,transformed.covariance.prime/last.params$loci,last.params$loci)
-				prior.prob.nugget.array[x,y,z] <- Prior_prob_nugget(nugget.prime,last.params$mean.sample.sizes)
+				prior.prob.nugget.array[x,y,z] <- Prior_prob_nugget(nugget.prime)
 			}
 		}
 	}
@@ -99,7 +92,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 		new.params$prior_prob_nugget <- prior.prob.nugget.array[sampled.parameters.index]
 		new.params$D <- fields::rdist(new.params$population.coordinates)
 		new.params$covariance <- Covariance(last.params$a0,last.params$aD,last.params$a2,new.params$D)
-		new.params$admixed.covariance <- admixed.Covariance(new.params$covariance,last.params$admix.proportions,new.params$nugget,last.params$k)
+		new.params$admixed.covariance <- admixed.Covariance(new.params$covariance,last.params$admix.proportions,new.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 		new.params$transformed_covariance <- transformed.Covariance(new.params$admixed.covariance,last.params$projection.matrix)
 		new.params$LnL_freqs <- lnL.array[sampled.parameters.index]
 		new.params$admix_target_location_moves[pop.to.update] <- new.params$admix_target_location_moves[pop.to.update] + 1
@@ -133,7 +126,7 @@ Update_admixture_target_location <- function(last.params){
 		D_prime <- fields::rdist(population.coordinates_prime[pop.to.update,1:2,drop=FALSE], population.coordinates_prime)
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
 		covariance_prime <- update.matrix(last.params$covariance,pop.to.update,tmp.covariance_prime)
-		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k)
+		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 				transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																		last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
@@ -167,7 +160,7 @@ Update_admixture_source_location <- function(last.params){
 		D_prime <- fields::rdist(population.coordinates_prime[ghost.to.update,1:2,drop=FALSE], population.coordinates_prime)
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
 		covariance_prime <- update.matrix(last.params$covariance,ghost.to.update,tmp.covariance_prime)
-		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k)
+		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 			transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																	last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
@@ -193,7 +186,7 @@ Update_admixture_proportions <- function(last.params){
 	admix.proportions_prime[pop.to.update] <- admix.proportions_prime[pop.to.update] + rnorm(1,0,exp(last.params$admix.proportions.lstp[pop.to.update]))
 	prior_prob_admix_proportions_prime <- Prior_prob_admix_proportions(admix.proportions_prime)
 	if(is.finite(prior_prob_admix_proportions_prime)){
-		admixed.covariance_prime <- admixed.Covariance(last.params$covariance,admix.proportions_prime,last.params$nugget,last.params$k)
+		admixed.covariance_prime <- admixed.Covariance(last.params$covariance,admix.proportions_prime,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 				transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,
 																		last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
@@ -217,7 +210,7 @@ Update_a0 <- function(last.params){
 	prior_prob_alpha0_prime <- Prior_prob_alpha0(a0_prime)
 	if(prior_prob_alpha0_prime != -Inf){
 		covariance_prime <- Covariance(a0_prime,last.params$aD,last.params$a2,last.params$D)
-			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k)
+			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 			transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
 				if(metropolis_ratio(LnL_freqs_prime,prior_prob_alpha0_prime,last.params$LnL_freqs,last.params$prior_prob_alpha0)){
@@ -241,7 +234,7 @@ Update_aD <- function(last.params){
 	prior_prob_alphaD_prime <- Prior_prob_alphaD(aD_prime)
 	if(prior_prob_alphaD_prime != -Inf){
 		covariance_prime <- Covariance(last.params$a0,aD_prime,last.params$a2,last.params$D)
-			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k)
+			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 			transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
 				if(metropolis_ratio(LnL_freqs_prime,prior_prob_alphaD_prime,last.params$LnL_freqs,last.params$prior_prob_alphaD)){
@@ -265,7 +258,7 @@ Update_a2 <- function(last.params){
 		prior_prob_alpha2_prime <- Prior_prob_alpha2(a2_prime) 
 		if(prior_prob_alpha2_prime != -Inf) {
 			covariance_prime <- Covariance(last.params$a0,last.params$aD,a2_prime,last.params$D)
-				admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k)
+				admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 				transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
 					if(metropolis_ratio(LnL_freqs_prime,prior_prob_alpha2_prime,last.params$LnL_freqs,last.params$prior_prob_alpha2)){
@@ -287,9 +280,9 @@ Update_nugget <- function(last.params){
 	new.params <- last.params
 		pop.to.update <- sample(1:last.params$k,1)
 	nugget_prime <- last.params$nugget + c(rep(0,pop.to.update-1),rnorm(1,0,exp(last.params$nugget.lstp[pop.to.update])),rep(0,last.params$k-pop.to.update))
-	prior_prob_nugget_prime <- Prior_prob_nugget(nugget_prime,last.params$mean.sample.sizes)
+	prior_prob_nugget_prime <- Prior_prob_nugget(nugget_prime)
 	if(prior_prob_nugget_prime != -Inf){
-		admixed.covariance_prime <- admixed.Covariance(last.params$covariance,last.params$admix.proportions,nugget_prime,last.params$k)
+		admixed.covariance_prime <- admixed.Covariance(last.params$covariance,last.params$admix.proportions,nugget_prime,last.params$k,last.params$inv.mean.sample.sizes)
 		transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
 				if(metropolis_ratio(LnL_freqs_prime, prior_prob_nugget_prime,last.params$LnL_freqs,last.params$prior_prob_nugget)){
@@ -342,8 +335,8 @@ Prior_prob_alpha2 <- function(a2){
 	log(dunif(a2,0.1,2))
 }
 
-Prior_prob_nugget <- function(nugget,mean.sample.sizes){
-	sum(dexp(nugget,rate=mean.sample.sizes,log=TRUE))
+Prior_prob_nugget <- function(nugget){
+	sum(dexp(nugget,log=TRUE))
 }
 
 Prior_prob_admix_proportions <- function(admix_proportions){
@@ -368,14 +361,14 @@ Covariance <- function(a0,aD,a2,GeoDist) {
 	return(covariance)
 }
 
-admixed.Covariance <- function(covariance,admix.proportions,nugget,k){
+admixed.Covariance <- function(covariance,admix.proportions,nugget,k,inv.mean.sample.sizes){
 	# recover()
 	w_k <- admix.proportions/2
 	admixed.Covariance <- 	tcrossprod((1-w_k),(1-w_k)) * 	covariance[1:k,1:k] + 
 							tcrossprod((1-w_k),(w_k)) 	* 	covariance[1:k,(k+1):(2*k)] +
 							tcrossprod(w_k,(1-w_k)) 	*	covariance[(k+1):(2*k),1:k] +
 							tcrossprod(w_k,w_k)			*	covariance[(k+1):(2*k),(k+1):(2*k)]
-	diag(admixed.Covariance) <- diag(admixed.Covariance) + nugget
+	diag(admixed.Covariance) <- diag(admixed.Covariance) + nugget + inv.mean.sample.sizes
 	return(admixed.Covariance)
 }
 
@@ -509,7 +502,7 @@ spacemix.data <- function(data.type,proj.mat.option=NULL,sample.frequencies=NULL
 	sample.covariance <- t(projection.matrix) %*% sample.covariance %*% projection.matrix
 	spacemix.data <- list(	"sample.frequencies" = sample.frequencies,
 							"mean.centered.normalized.frequencies" = mean.centered.normalized.frequencies,
-							"mean.sample.sizes" = mean.sample.sizes,
+							"inv.mean.sample.sizes" = 1/mean.sample.sizes,
 							"projection.matrix" = projection.matrix,
 							"sample.covariance" = sample.covariance,
 							"loci" = loci)
@@ -555,10 +548,10 @@ initiate.population.coordinates <- function(observed.X.coordinates,observed.Y.co
 	return(population.coordinates)
 }
 
-save.initial.parameters <- function(a0,aD,a2,nugget,admix.proportions,covariance,admixed.covariance,transformed_covariance,population.coordinates,D,projection.matrix,prefix){
+save.initial.parameters <- function(a0,aD,a2,nugget,admix.proportions,covariance,admixed.covariance,transformed_covariance,population.coordinates,D,projection.matrix,inv.mean.sample.sizes,prefix){
 	initial.parameters <- list("a0" = a0,"aD" = aD,"a2" = a2,"nugget" = nugget,"admix.proportions" = admix.proportions,
 								"covariance" = covariance,"admixed.covariance" = admixed.covariance,"transformed_covariance" = transformed_covariance,
-								"population.coordinates" = population.coordinates,"D" = D,"projection.matrix" = projection.matrix)
+								"population.coordinates" = population.coordinates,"D" = D,"projection.matrix" = projection.matrix,"inv.mean.sample.sizes"=inv.mean.sample.sizes)
 	save(initial.parameters,file=paste(prefix,"Initial.parameters.Robj",sep=''))
 	return(0)
 }
@@ -660,7 +653,7 @@ initiate.last.params <- function(spacemix.data,population.coordinates,admix.prop
 						"admix_proportions_accept" = admix_proportions_accept,
 						"loci" = spacemix.data$loci,
 						"D" = D,
-						"mean.sample.sizes" = spacemix.data$mean.sample.sizes,
+						"inv.mean.sample.sizes" = spacemix.data$inv.mean.sample.sizes,
 						"observed.X.coordinates" = observed.X.coordinates,
 						"observed.Y.coordinates" = observed.Y.coordinates,
 						"target.spatial.prior.scale" = target.spatial.prior.scale,
@@ -764,7 +757,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				badness.counter <- 0
 
 			while(Prob[1] == -Inf | any(eigen(admixed.covariance)$values<0) && badness.counter < 100){
-						nugget[,1] <- rexp(k,rate = spacemix.data$mean.sample.sizes)
+						nugget[,1] <- rexp(k)
 						a0[1] <- rexp(1,1/100)
 						aD[1] <- rexp(1,1)
 						a2[1] <- runif(1,0.1,2)
@@ -781,11 +774,11 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 							source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
 						}
 					covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
-					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[[1]],nugget[,1],k)
+					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[[1]],nugget[,1],k,spacemix.data$inv.mean.sample.sizes)
 					transformed_covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
 					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[[1]],
 													covariance,admixed.covariance,transformed_covariance,
-													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,prefix)
+													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
 				LnL_freqs[1] <- wishart.lnL(spacemix.data$sample.covariance,transformed_covariance/spacemix.data$loci,spacemix.data$loci)
 					cat("LnL: ",LnL_freqs[1],"\n")
 				prior_prob_alpha0 <- Prior_prob_alpha0(a0[1])
@@ -794,7 +787,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 					cat("Pr(aD): ",prior_prob_alphaD,"\n")
 				prior_prob_alpha2 <- Prior_prob_alpha2(a2[1])
 					cat("Pr(a2): ",prior_prob_alpha2,"\n")
-				prior_prob_nugget <- Prior_prob_nugget(nugget[,1],spacemix.data$mean.sample.sizes)
+				prior_prob_nugget <- Prior_prob_nugget(nugget[,1])
 					cat("Pr(nugget): ",prior_prob_nugget,"\n")
 				prior_prob_admix_target_locations <- Prior_prob_admix_target_locations(population.coordinates[[1]][1:k,],observed.X.coordinates,observed.Y.coordinates,target.spatial.prior.scale)
 					cat("Pr(admix_target_locations): ",prior_prob_admix_target_locations,"\n")
@@ -853,7 +846,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 					transformed_covariance <- continuing.params$transformed_covariance
 					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[[1]],
 													covariance,admixed.covariance,transformed_covariance,
-													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,prefix)
+													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
 				LnL_freqs[1] <- continuing.params$LnL_freqs
 					cat("LnL: ",LnL_freqs[1],"\n")
 				prior_prob_alpha0 <- continuing.params$prior_prob_alpha0
