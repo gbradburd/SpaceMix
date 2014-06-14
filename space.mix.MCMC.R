@@ -67,7 +67,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 				tmp.cov <- Covariance(last.params$a0,
 									  last.params$aD,
 								  	  last.params$a2,
-									  fields::rdist(coords.prime[pop.to.update,1:2,drop=FALSE],coords.prime))
+									  spacemix.dist(coords.prime[pop.to.update,1:2,drop=FALSE],coords.prime))
 				covariance.prime[pop.to.update,] <- tmp.cov
 				covariance.prime[,pop.to.update] <- tmp.cov
 			for(z in 1:length(nugget.gridpoints)){
@@ -90,7 +90,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 		new.params$prior_prob_admix_target_locations <- prior.prob.admix.target.locations.array[sampled.parameters.index]
 		new.params$nugget[pop.to.update] <- nugget.gridpoints[sampled.parameters.index[3]]
 		new.params$prior_prob_nugget <- prior.prob.nugget.array[sampled.parameters.index]
-		new.params$D <- fields::rdist(new.params$population.coordinates)
+		new.params$D <- spacemix.dist(new.params$population.coordinates)
 		new.params$covariance <- Covariance(last.params$a0,last.params$aD,last.params$a2,new.params$D)
 		new.params$admixed.covariance <- admixed.Covariance(new.params$covariance,last.params$admix.proportions,new.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 		new.params$transformed_covariance <- transformed.Covariance(new.params$admixed.covariance,last.params$projection.matrix)
@@ -123,7 +123,7 @@ Update_admixture_target_location <- function(last.params){
 																						last.params$observed.X.coordinates,
 																						last.params$observed.Y.coordinates,
 																						last.params$target.spatial.prior.scale)
-		D_prime <- fields::rdist(population.coordinates_prime[pop.to.update,1:2,drop=FALSE], population.coordinates_prime)
+		D_prime <- spacemix.dist(population.coordinates_prime[pop.to.update,1:2,drop=FALSE], population.coordinates_prime)
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
 		covariance_prime <- update.matrix(last.params$covariance,pop.to.update,tmp.covariance_prime)
 		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
@@ -157,7 +157,7 @@ Update_admixture_source_location <- function(last.params){
 	prior_prob_admix_source_locations_prime <- Prior_prob_admix_source_locations(population.coordinates_prime[(last.params$k+1):(2*last.params$k),],
 																					last.params$centroid,
 																					last.params$source.spatial.prior.scale)
-		D_prime <- fields::rdist(population.coordinates_prime[ghost.to.update,1:2,drop=FALSE], population.coordinates_prime)
+		D_prime <- spacemix.dist(population.coordinates_prime[ghost.to.update,1:2,drop=FALSE], population.coordinates_prime)
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
 		covariance_prime <- update.matrix(last.params$covariance,ghost.to.update,tmp.covariance_prime)
 		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
@@ -510,9 +510,36 @@ spacemix.data <- function(data.type,proj.mat.option=NULL,sample.frequencies=NULL
 	return(spacemix.data)
 }
 
-propose.new.location <- function(lat,long,dist.std){
+propose.new.location.plane <- function(lat,long,dist.std){
 	coords_prime <- c(lat,long) + rnorm(n = 2, mean = 0, sd = dist.std)
 	return(coords_prime)
+}
+
+sphere.hop <- function(lat,long,distance,bearing){
+	new.lat <- asin(sin(lat) * cos(distance) + cos(lat) * sin(distance) * cos(bearing))
+	dlong <- atan2(sin(bearing)*sin(distance)*cos(lat),cos(distance)-sin(lat)*sin(new.lat))
+	new.long <- (long - dlong + pi) %% (2*pi) - pi
+	return(cbind(new.long,new.lat))
+}
+
+propose.new.location.sphere <- function(lat,long,dist.std){
+	lat <- degrees2radians(lat)
+	long <- degrees2radians(long)
+	proposed.jump <- abs(rnorm(1,0,dist.std))
+	jump.bearing <- runif(1,0,2*pi)
+	coords_prime <- sphere.hop(long,lat,proposed.jump,jump.bearing)
+	coords_prime <- radians2degrees(coords_prime)
+	return(coords_prime)
+}
+
+degrees2radians <- function(degrees){
+	radians <- (pi/180) * degrees
+	return(radians)
+}
+
+radians2degrees <- function(radians){
+	degrees <- (180/pi) * radians			
+	return(degrees)
 }
 
 initiate.admix.proportions <- function(k,model.option){
@@ -681,6 +708,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				source.spatial.prior.scale = NULL,
 				observed.X.coordinates,
 				observed.Y.coordinates,
+				round.earth,
 				k,
 				loci,
 				ngen,
@@ -709,7 +737,15 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 									sample.sizes = sample.sizes,
 									sample.covariance = sample.covariance,
 									prefix = prefix)
-		
+	
+	if(round.earth){
+		propose.new.location <<- propose.new.location.sphere
+		spacemix.dist <<- fields::rdist
+	} else {
+		propose.new.location <<- propose.new.location.plane
+		spacemix.dist <<- fields::rdist.earth
+	}
+	
 	#Declare variables
 	if(TRUE){
 		LnL_freqs <- numeric(ngen/samplefreq)
@@ -765,7 +801,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 						initiate.admix.proportions.list <- initiate.admix.proportions(k,model.option)
 						admix.proportions[[1]] <- initiate.admix.proportions.list$admix.proportions
 						prior_prob_admix_proportions <- initiate.admix.proportions.list$prior_prob_admix_proportions
-					distances[[1]] <- fields::rdist(population.coordinates[[1]])
+					distances[[1]] <- spacemix.dist(population.coordinates[[1]])
 						centroid <- c(mean(observed.X.coordinates),mean(observed.Y.coordinates))
 						if(is.null(target.spatial.prior.scale)){
 							target.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) / 2
