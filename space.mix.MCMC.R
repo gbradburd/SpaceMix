@@ -753,7 +753,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		population.coordinates <- vector("list",ngen/samplefreq)
 		distances <- vector("list",ngen/samplefreq)
 		transformed.covariance.list <- vector("list",ngen/samplefreq)
-		admix.proportions <- vector("list",ngen/samplefreq)
+		admix.proportions <- matrix(0,nrow=k,ncol=ngen/samplefreq)
 		nugget <- matrix(0,nrow=k,ncol=ngen/samplefreq)
 		a0 <- numeric(ngen/samplefreq)
 		aD <- numeric(ngen/samplefreq)
@@ -799,7 +799,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 						a2[1] <- runif(1,0.1,2)
 						population.coordinates[[1]] <- 	initiate.population.coordinates(observed.X.coordinates,observed.Y.coordinates,k)
 						initiate.admix.proportions.list <- initiate.admix.proportions(k,model.option)
-						admix.proportions[[1]] <- initiate.admix.proportions.list$admix.proportions
+						admix.proportions[,1] <- initiate.admix.proportions.list$admix.proportions
 						prior_prob_admix_proportions <- initiate.admix.proportions.list$prior_prob_admix_proportions
 					distances[[1]] <- spacemix.dist(population.coordinates[[1]])
 						centroid <- c(mean(observed.X.coordinates),mean(observed.Y.coordinates))
@@ -810,9 +810,9 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 							source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
 						}
 					covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
-					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[[1]],nugget[,1],k,spacemix.data$inv.mean.sample.sizes)
+					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes)
 					transformed_covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
-					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[[1]],
+					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],
 													covariance,admixed.covariance,transformed_covariance,
 													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
 				LnL_freqs[1] <- wishart.lnL(spacemix.data$sample.covariance,transformed_covariance/spacemix.data$loci,spacemix.data$loci)
@@ -841,7 +841,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				}
 			}
 		}	
-		last.params <- initiate.last.params(spacemix.data = spacemix.data,population.coordinates = population.coordinates[[1]],admix.proportions = admix.proportions[[1]],
+		last.params <- initiate.last.params(spacemix.data = spacemix.data,population.coordinates = population.coordinates[[1]],admix.proportions = admix.proportions[,1],
 											a0[1],aD[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed_covariance,
 											admix.proportions.lstp = numeric(k),admix.target.location.lstp = numeric(k),admix.source.location.lstp = numeric(k),nugget.lstp = numeric(k),
 											a0.lstp = 0,aD.lstp = 0,a2.lstp = 0,k = k,LnL_freqs = LnL_freqs[1],
@@ -871,7 +871,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		aD[1] <- continuing.params$aD
 		a2[1] <- continuing.params$a2
 		population.coordinates[[1]] <- 	continuing.params$population.coordinates
-		admix.proportions[[1]] <- continuing.params$admix.proportions
+		admix.proportions[,1] <- continuing.params$admix.proportions
 		prior_prob_admix_proportions <- continuing.params$prior_prob_admix_proportions
 					distances[[1]] <- continuing.params$D
 						centroid <- continuing.params$centroid
@@ -880,7 +880,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 					covariance <- continuing.params$covariance
 					admixed.covariance <- continuing.params$admixed.covariance
 					transformed_covariance <- continuing.params$transformed_covariance
-					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[[1]],
+					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],
 													covariance,admixed.covariance,transformed_covariance,
 													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
 				LnL_freqs[1] <- continuing.params$LnL_freqs
@@ -902,7 +902,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				cat("Prob: ",Prob[1],"\n")
 		last.params <- initiate.last.params(spacemix.data = spacemix.data,
 											population.coordinates = population.coordinates[[1]],
-											admix.proportions = admix.proportions[[1]],
+											admix.proportions = admix.proportions[,1],
 											a0[1],aD[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed_covariance,
 											admix.proportions.lstp = continuing.params$admix.proportions.lstp,
 											admix.target.location.lstp = continuing.params$admix.target.location.lstp,
@@ -966,7 +966,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 			population.coordinates[[j]] <- new.params$population.coordinates
 			distances[[j]] <- new.params$D
 			transformed.covariance.list[[j]] <- new.params$transformed_covariance
-			admix.proportions[[j]] <- new.params$admix.proportions
+			admix.proportions[,j] <- new.params$admix.proportions
 			nugget[,j] <- new.params$nugget
 			a0[j] <- new.params$a0
 			aD[j] <- new.params$aD
@@ -1258,7 +1258,7 @@ plot.pop.coords <- function(observed.locations,target.coords,k,admix.proportions
 					points(source.coords[[i]][,1],source.coords[[i]][,2],col=adjustcolor(rainbow(k),0.2),pch=15)
 					segments(x0 = source.coords[[i]][,1], y0 = source.coords[[i]][,2],
 							x1 = target.coords[[i]][,1], y1 = target.coords[[i]][,2],
-							col = adjustcolor(rainbow(k),0.2) , lwd = admix.proportions[[i]]*1)
+							col = adjustcolor(rainbow(k),0.2) , lwd = admix.proportions[,i]*1)
 			}
 		} else if(is.null(segments)){
 			for(i in 1:length(target.coords)){
