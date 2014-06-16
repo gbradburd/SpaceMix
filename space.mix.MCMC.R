@@ -299,6 +299,30 @@ Update_nugget <- function(last.params){
 	return(new.params)
 }
 
+Update_nugget <- function(last.params){
+	new.params <- last.params
+		pop.to.update <- sample(1:last.params$k,1)
+	nugget_prime <- last.params$nugget + c(rep(0,pop.to.update-1),rnorm(1,0,exp(last.params$nugget.lstp[pop.to.update])),rep(0,last.params$k-pop.to.update))
+	prior_prob_nugget_prime <- Prior_prob_nugget(nugget_prime)
+	if(prior_prob_nugget_prime != -Inf){
+		admixed.covariance_prime <- last.params$admixed.covariance
+		admixed.covariance_prime[pop.to.update,pop.to.update] <- admixed.covariance_prime[pop.to.update,pop.to.update] - last.params$nugget[pop.to.update] + nugget_prime[pop.to.update]
+		transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
+				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
+				if(metropolis_ratio(LnL_freqs_prime, prior_prob_nugget_prime,last.params$LnL_freqs,last.params$prior_prob_nugget)){
+					new.params$nugget <- nugget_prime
+					new.params$admixed.covariance <- admixed.covariance_prime
+					new.params$transformed_covariance <- transformed_covariance_prime
+					new.params$prior_prob_nugget <- prior_prob_nugget_prime
+					new.params$LnL_freqs <- LnL_freqs_prime
+					new.params$nugget_accept[pop.to.update] <- new.params$nugget_accept[pop.to.update] + 1
+				}
+	}
+	new.params$nugget_moves[pop.to.update] <- new.params$nugget_moves[pop.to.update] + 1
+	new.params$nugget_accept_rate[pop.to.update] <- new.params$nugget_accept[pop.to.update]/new.params$nugget_moves[pop.to.update]
+	return(new.params)
+}
+
 metropolis_ratio <- function(LnL_prime,prior_prime,LnL,prior){
 	accept <- FALSE
 	if( exp((LnL_prime + prior_prime) - (LnL+prior)) >= runif(1) ){
