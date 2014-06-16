@@ -209,7 +209,7 @@ Update_a0 <- function(last.params){
 	a0_prime <- last.params$a0 + rnorm(1,0,exp(last.params$a0.lstp))
 	prior_prob_alpha0_prime <- Prior_prob_alpha0(a0_prime)
 	if(prior_prob_alpha0_prime != -Inf){
-		covariance_prime <- Covariance(a0_prime,last.params$aD,last.params$a2,last.params$D)
+		covariance_prime <- (last.params$covariance*last.params$a0)/a0_prime
 			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
 			transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
@@ -306,7 +306,7 @@ Update_nugget <- function(last.params){
 	prior_prob_nugget_prime <- Prior_prob_nugget(nugget_prime)
 	if(prior_prob_nugget_prime != -Inf){
 		admixed.covariance_prime <- last.params$admixed.covariance
-		admixed.covariance_prime[pop.to.update,pop.to.update] <- admixed.covariance_prime[pop.to.update,pop.to.update] - last.params$nugget[pop.to.update] + nugget_prime[pop.to.update]
+		diag(admixed.covariance_prime) <- diag(admixed.covariance_prime) - last.params$nugget + nugget_prime
 		transformed_covariance_prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- wishart.lnL(last.params$sample.covariance,transformed_covariance_prime/last.params$loci,last.params$loci)
 				if(metropolis_ratio(LnL_freqs_prime, prior_prob_nugget_prime,last.params$LnL_freqs,last.params$prior_prob_nugget)){
