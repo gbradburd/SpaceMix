@@ -817,44 +817,90 @@ print.mcmc.update <- function(LnL_freqs,prior_prob_admix_proportions,prior_prob_
 	return(P)
 }
 
-update.sampled.accept.rates <- function(model.option,accept_rates,j,new.params){
-		accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
-		accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
-		accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
-		accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
-	if(model.option == "target"){
-		accept_rates$admix_target_location_accept_rate[,j] <- new.params$accept_rates$admix_target_location_accept_rate
+make.update.sampled.accept.rates.function <- function(model.option){
+	if(model.option == "no_movement"){
+		update.sampled.accept.rates <<- function(accept_rates,j,new.params){
+			accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
+			accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
+			accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
+			accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
+			return(accept_rates)
+		}
+	} else if(model.option == "target"){
+		update.sampled.accept.rates <<- function(accept_rates,j,new.params){
+			accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
+			accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
+			accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
+			accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
+			accept_rates$admix_target_location_accept_rate[,j] <- new.params$accept_rates$admix_target_location_accept_rate
+			return(accept_rates)
+		}
+	} else if(model.option == "source"){
+		update.sampled.accept.rates <<- function(accept_rates,j,new.params){
+			accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
+			accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
+			accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
+			accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
+			accept_rates$admix_source_location_accept_rate[,j] <- new.params$accept_rates$admix_source_location_accept_rate
+			accept_rates$admix_proportions_accept_rate[,j] <- new.params$accept_rates$admix_proportions_accept_rate
+			return(accept_rates)
+		}
+	} else if(model.option == "source_and_target"){
+		update.sampled.accept.rates <<- function(accept_rates,j,new.params){
+			accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
+			accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
+			accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
+			accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
+			accept_rates$admix_target_location_accept_rate[,j] <- new.params$accept_rates$admix_target_location_accept_rate
+			accept_rates$admix_source_location_accept_rate[,j] <- new.params$accept_rates$admix_source_location_accept_rate
+			accept_rates$admix_proportions_accept_rate[,j] <- new.params$accept_rates$admix_proportions_accept_rate
+			return(accept_rates)
+		}
 	}
-	if(model.option == "source"){
-		accept_rates$admix_source_location_accept_rate[,j] <- new.params$accept_rates$admix_source_location_accept_rate
-		accept_rates$admix_proportions_accept_rate[,j] <- new.params$accept_rates$admix_proportions_accept_rate
-	}
-	if(model.option == "source_and_target"){
-		accept_rates$admix_target_location_accept_rate[,j] <- new.params$accept_rates$admix_target_location_accept_rate
-		accept_rates$admix_source_location_accept_rate[,j] <- new.params$accept_rates$admix_source_location_accept_rate
-		accept_rates$admix_proportions_accept_rate[,j] <- new.params$accept_rates$admix_proportions_accept_rate
-	}
-	return(accept_rates)
+	return(0)
 }
 
-update.sampled.lstps <- function(model.option,lstps,j,new.params){
-		lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
-		lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
-		lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
-		lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
-	if(model.option == "target"){
-		lstps$admix_target_location_lstp[,j] <- new.params$lstps$admix_target_location_lstp
+make.update.sampled.lstps.function <- function(model.option){
+	if(model.option == "no_movement"){
+		update.sampled.lstps <<- function(lstps,j,new.params){
+			lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
+			lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
+			lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
+			lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
+			return(lstps)
+		}
+	} else if(model.option == "target"){
+		update.sampled.lstps <<- function(lstps,j,new.params){
+			lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
+			lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
+			lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
+			lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
+			lstps$admix_target_location_lstp[,j] <- new.params$lstps$admix_target_location_lstp
+			return(lstps)
+		}	
+	} else if(model.option == "source"){
+		update.sampled.lstps <<- function(lstps,j,new.params){
+			lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
+			lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
+			lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
+			lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
+			lstps$admix_source_location_lstp[,j] <- new.params$lstps$admix_source_location_lstp
+			lstps$admix_proportions_lstp[,j] <- new.params$lstps$admix_proportions_lstp
+			return(lstps)
+		}
+	} else if(model.option == "source_and_target"){
+		update.sampled.lstps <<- function(lstps,j,new.params){
+			lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
+			lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
+			lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
+			lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
+			lstps$admix_target_location_lstp[,j] <- new.params$lstps$admix_target_location_lstp
+			lstps$admix_source_location_lstp[,j] <- new.params$lstps$admix_source_location_lstp
+			lstps$admix_proportions_lstp[,j] <- new.params$lstps$admix_proportions_lstp
+			return(lstps)
+		}
 	}
-	if(model.option == "source"){
-		lstps$admix_source_location_lstp[,j] <- new.params$lstps$admix_source_location_lstp
-		lstps$admix_proportions_lstp[,j] <- new.params$lstps$admix_proportions_lstp
-	}
-	if(model.option == "source_and_target"){
-		lstps$admix_target_location_lstp[,j] <- new.params$lstps$admix_target_location_lstp
-		lstps$admix_source_location_lstp[,j] <- new.params$lstps$admix_source_location_lstp
-		lstps$admix_proportions_lstp[,j] <- new.params$lstps$admix_proportions_lstp
-	}
-	return(lstps)
+	return(0)
 }
 
 get.diagn.step <- function(generation,mixing.diagn.freq){
@@ -865,25 +911,51 @@ get.diagn.step <- function(generation,mixing.diagn.freq){
 	return(diagn.step)
 }
 
-update.diagns <- function(model.option,diagns,generation,mixing.diagn.freq,new.params){
-	diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
-		diagns$a0_diagn[diagn.step] <- new.params$accept_rates$a0_accept_rate
-		diagns$aD_diagn[diagn.step] <- new.params$accept_rates$aD_accept_rate
-		diagns$a2_diagn[diagn.step] <- new.params$accept_rates$a2_accept_rate
-		diagns$nugget_diagn[,diagn.step] <- new.params$accept_rates$nugget_accept_rate
-	if(model.option == "target"){
-		diagns$admix_target_location_diagn[,diagn.step] <- new.params$accept_rates$admix_target_location_accept_rate
+make.update.diagns.function <- function(model.option){
+	if(model.option == "no_movement"){
+		update.diagns <<- function(diagns,generation,mixing.diagn.freq,accept_rates){
+			diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
+				diagns$a0_diagn[diagn.step] <- accept_rates$a0_accept_rate
+				diagns$aD_diagn[diagn.step] <- accept_rates$aD_accept_rate
+				diagns$a2_diagn[diagn.step] <- accept_rates$a2_accept_rate
+				diagns$nugget_diagn[,diagn.step] <- accept_rates$nugget_accept_rate
+			return(diagns)
+		}
+	} else if(model.option == "target"){
+		update.diagns <<- function(diagns,generation,mixing.diagn.freq,accept_rates){
+			diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
+				diagns$a0_diagn[diagn.step] <- accept_rates$a0_accept_rate
+				diagns$aD_diagn[diagn.step] <- accept_rates$aD_accept_rate
+				diagns$a2_diagn[diagn.step] <- accept_rates$a2_accept_rate
+				diagns$nugget_diagn[,diagn.step] <- accept_rates$nugget_accept_rate
+				diagns$admix_target_location_diagn[,diagn.step] <- accept_rates$admix_target_location_accept_rate
+			return(diagns)
+		}
+	} else if(model.option == "source"){
+		update.diagns <<- function(diagns,generation,mixing.diagn.freq,accept_rates){
+			diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
+				diagns$a0_diagn[diagn.step] <- accept_rates$a0_accept_rate
+				diagns$aD_diagn[diagn.step] <- accept_rates$aD_accept_rate
+				diagns$a2_diagn[diagn.step] <- accept_rates$a2_accept_rate
+				diagns$nugget_diagn[,diagn.step] <- accept_rates$nugget_accept_rate
+				diagns$admix_source_location_diagn[,diagn.step] <- accept_rates$admix_source_location_accept_rate
+				diagns$admix_proportions_diagn[,diagn.step] <- accept_rates$admix_proportions_accept_rate
+			return(diagns)
+		}
+	} else if(model.option == "source_and_target"){
+		update.diagns <<- function(diagns,generation,mixing.diagn.freq,accept_rates){
+			diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
+				diagns$a0_diagn[diagn.step] <- accept_rates$a0_accept_rate
+				diagns$aD_diagn[diagn.step] <- accept_rates$aD_accept_rate
+				diagns$a2_diagn[diagn.step] <- accept_rates$a2_accept_rate
+				diagns$nugget_diagn[,diagn.step] <- accept_rates$nugget_accept_rate
+				diagns$admix_target_location_diagn[,diagn.step] <- accept_rates$admix_target_location_accept_rate
+				diagns$admix_source_location_diagn[,diagn.step] <- accept_rates$admix_source_location_accept_rate
+				diagns$admix_proportions_diagn[,diagn.step] <- accept_rates$admix_proportions_accept_rate
+			return(diagns)
+		}
 	}
-	if(model.option == "source"){
-		diagns$admix_source_location_diagn[,diagn.step] <- new.params$accept_rates$admix_source_location_accept_rate
-		diagns$admix_proportions_diagn[,diagn.step] <- new.params$accept_rates$admix_proportions_accept_rate
-	}
-	if(model.option == "source_and_target"){
-		diagns$admix_target_location_diagn[,diagn.step] <- new.params$accept_rates$admix_target_location_accept_rate
-		diagns$admix_source_location_diagn[,diagn.step] <- new.params$accept_rates$admix_source_location_accept_rate
-		diagns$admix_proportions_diagn[,diagn.step] <- new.params$accept_rates$admix_proportions_accept_rate
-	}
-	return(diagns)
+	return(0)
 }
 
 update.lstp <- function(n,lstp,acceptance.fraction){
@@ -905,24 +977,47 @@ update.lstp <- function(n,lstp,acceptance.fraction){
 	return(lstp)
 }
 
-update.all.lstps <- function(model.option,lstps,n,diagns){
-		lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
-		lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
-		lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
-		lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
-	if(model.option == "target"){
-		lstps$admix_target_location_lstp <- update.lstp(n,lstps$admix_target_location_lstp,rowMeans(diagns$admix_target_location_diagn))
+make.update.all.lstps.function <- function(model.option){
+	if(model.option == "no_movement"){
+		update.all.lstps <<- function(lstps,n,diagns){
+			lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
+			lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
+			lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
+			lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
+			return(lstps)
+		}
+	} else if(model.option == "target"){
+		update.all.lstps <<- function(lstps,n,diagns){
+			lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
+			lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
+			lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
+			lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
+			lstps$admix_target_location_lstp <- update.lstp(n,lstps$admix_target_location_lstp,rowMeans(diagns$admix_target_location_diagn))
+			return(lstps)
+		}
+	} else if(model.option == "source"){
+		update.all.lstps <<- function(lstps,n,diagns){
+			lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
+			lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
+			lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
+			lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
+			lstps$admix_source_location_lstp <- update.lstp(n,lstps$admix_source_location_lstp,rowMeans(diagns$admix_source_location_diagn))
+			lstps$admix_proportions_lstp <- update.lstp(n,lstps$admix_proportions_lstp,rowMeans(diagns$admix_proportions_diagn))
+			return(lstps)
+		}
+	} else if(model.option == "source_and_target"){
+		update.all.lstps <<- function(lstps,n,diagns){
+			lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
+			lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
+			lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
+			lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
+			lstps$admix_target_location_lstp <- update.lstp(n,lstps$admix_target_location_lstp,rowMeans(diagns$admix_target_location_diagn))
+			lstps$admix_source_location_lstp <- update.lstp(n,lstps$admix_source_location_lstp,rowMeans(diagns$admix_source_location_diagn))
+			lstps$admix_proportions_lstp <- update.lstp(n,lstps$admix_proportions_lstp,rowMeans(diagns$admix_proportions_diagn))
+			return(lstps)
+		}
 	}
-	if(model.option == "source"){
-		lstps$admix_source_location_lstp <- update.lstp(n,lstps$admix_source_location_lstp,rowMeans(diagns$admix_source_location_diagn))
-		lstps$admix_proportions_lstp <- update.lstp(n,lstps$admix_proportions_lstp,rowMeans(diagns$admix_proportions_diagn))
-	}
-	if(model.option == "source_and_target"){
-		lstps$admix_target_location_lstp <- update.lstp(n,lstps$admix_target_location_lstp,rowMeans(diagns$admix_target_location_diagn))
-		lstps$admix_source_location_lstp <- update.lstp(n,lstps$admix_source_location_lstp,rowMeans(diagns$admix_source_location_diagn))
-		lstps$admix_proportions_lstp <- update.lstp(n,lstps$admix_proportions_lstp,rowMeans(diagns$admix_proportions_diagn))
-	}
-	return(lstps)
+	return(0)
 }
 
 initiate.last.params <- function(model.option,samplefreq,ngen,spacemix.data,population.coordinates,admix.proportions,a0,aD,a2,nugget,covariance,admixed.covariance,transformed_covariance,
@@ -1192,6 +1287,11 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		last.ngen <- continuing.params$last.ngen
 	}
 	
+	tmp <- make.update.sampled.accept.rates.function(model.option)
+	tmp <- make.update.sampled.lstps.function(model.option)
+	tmp <- make.update.diagns.function(model.option)
+	tmp <- make.update.all.lstps.function(model.option)
+	
 	#Run the MCMC
 		Updates <- initiate.update.function.list(model.option)
 	
@@ -1221,15 +1321,15 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 						new.params$prior_prob_alpha2 + 
 						new.params$prior_prob_admix_target_locations + 
 						new.params$prior_prob_admix_source_locations
-			accept_rates <- update.sampled.accept.rates(model.option,accept_rates,j,new.params)
-			lstps <- update.sampled.lstps(model.option,lstps,j,new.params)
+			accept_rates <- update.sampled.accept.rates(accept_rates,j,new.params)
+			lstps <- update.sampled.lstps(lstps,j,new.params)
 		}
 		
-		diagns <- update.diagns(model.option,diagns,i,mixing.diagn.freq,new.params)
+		diagns <- update.diagns(diagns,i,mixing.diagn.freq,new.params$accept_rates)
 		
 		if(i%%mixing.diagn.freq == 0){
 			n <- (i + last.ngen) %/% mixing.diagn.freq
-			new.params$lstps <- update.all.lstps(model.option,new.params$lstps,n,diagns)
+			new.params$lstps <- update.all.lstps(new.params$lstps,n,diagns)
 		}
 
 		last.params <- new.params
