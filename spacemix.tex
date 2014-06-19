@@ -11,11 +11,11 @@
 %%%
 \maketitle
 %%%
-\hspace{-0.25in}\textsuperscript{1}Center for Population Biology, Department of Evolution and Ecology, University of California, Davis, CA 95616\\
-\textsuperscript{3}Department of Molecular and Computational Biology, University of Southern California, Los Angeles, CA 90089\\
+\hspace{-0.25in}\textsuperscript{1}Center for Population Biology, Department of Evolution and Ecology, University of California, Davis, CA 95616\\\\
+\textsuperscript{3}Department of Molecular and Computational Biology, University of Southern California, Los Angeles, CA 90089\\\\
 \textsuperscript{a}gbradburd@ucdavis.edu; 
 \textsuperscript{b}pralph@usc.edu;
-\textsuperscript{c}gmcoop@ucdavis.edu\\\\
+\textsuperscript{c}gmcoop@ucdavis.edu\\\\\
 %%%
 \newpage
 %%%%%%%%%
@@ -26,46 +26,56 @@ The patterns of genetic variation observed in modern populations are the product
 \newpage
 \section*{Introduction}
 population processes leave a stamp on extant patterns of genetic variation, and we can learn about them by studying those patterns.
-\
+\\\\
 most of this work has focused on building population phylogenies (rich history).  in acknowledgement of prevalence of departures from tree-structure, recent work has allowed reticulations, defined as admixture, very good stuff
-\
+\\\\
 however, we feel a more natural framework for studying this is IBD. (prevalence in nature, rich history there too).
-\
+\\\\
 here, we present an analytical framework for studying the spatial distribution of genetic variation, develop an inference algorithm for parameter estimation within this framework, and introduce a simple statistic for quantifying a population's admixture status.
-\
+\\\\
 %%%%%%%%%
 \section*{Methods}
-
-\subsection*{The Normal Approximation to Drift}
-	If time scales are sufficiently short and the extent of drift sufficiently limited, the approximation of inter-generational binomial sampling to Brownian motion is actually pretty good (figure comparing fit of binomial sampling to fit of normal approx?).  Therefore, shared drift can be interpreted as covariance in allele frequencies across loci.  
-\subection*{Mean-centering and normalizing variance}
-a natural framework for modeling this covariance is the multivariate normal distribution.  however, allele frequencies are constrained to vary between 0 and 1, and may have heterogeneous variance across loci.  therefore, we mean-center and normalize, and all the mean-centered, normalized allele frequencies X.
-\
-this is how we get sample mean frequencies, and this is how we get X from frequency data
-\
-note, using the sample mean frequency to mean-center can induce negative covariance, and also we lose a degree of freedom.  we discuss this further below.
-\
 \subsection*{Data}
 basically copy bedassle here, but include info on lat/long
-\
+%
+\subsection*{The Normal Approximation to Drift}
+If time scales are sufficiently short and the extent of drift sufficiently limited, the approximation of inter-generational binomial sampling to Brownian motion is actually pretty good (figure comparing fit of binomial sampling to fit of normal approx?).  
+\\\\
+Therefore, shared drift can be interpreted as covariance in allele frequencies across loci.
+%
+\subsection*{Mean-centering and normalizing variance}
+a natural framework for modeling this covariance is the multivariate normal distribution.
+\\\\
+however, allele frequencies are constrained to vary between 0 and 1, and may have heterogeneous variance across loci.  therefore, we mean-center and normalize, and all the mean-centered, normalized allele frequencies X.
+\\\\
+this is how we get sample mean frequencies, and this is how we get X from frequency data
+\\\\
+note, using the sample mean frequency to mean-center can induce negative covariance, and also we lose a degree of freedom.  we discuss this further below.
+%
 \subsection*{Spatial Covariance Model}
-we can model the sample covariance in mean-centered normalized allele frequencies as Wishart with degrees of freedom equal to the number of loci across which the covariance is calculated.  The form of our parametric covariance matrix is ___, which fits a model of exponential decay to allele frequency covariance with distance.  The parameters ____ do _____.
-The likelihood function is therefore ____.
-\
-
+we can model the sample covariance in mean-centered normalized allele frequencies as Wishart with degrees of freedom equal to the number of loci across which the covariance is calculated.
+\\\\
+The form of our parametric covariance matrix is XXX, which fits a model of exponential decay to allele frequency covariance with distance.  The parameters XXXX do XXXXX.
+The likelihood function is therefore XXXX.
+%
 \subsection*{Accommodating non-equilibrium processes}
 This model assumes that the system is in migration-drift equilibrium and that every unit of pairwise geographic distance is equivalent in its contribution to decay of allelic covariance, but in many cases those assumptions will not be met.
-\
+\\\\
 Non-equilibrium processes like recent migration/colonization, or long distance dispersal events, will distort the shape of the decay of covariance with distance, and may bias parameter estimation. (MS simulations showing what SpaceMix does with space that has been distorted by a recent expansion/colonization, or that has a big barrier in it -> figures).
-\
+\\\\
 Alternatively, if there are strong barriers to dispersal on the landscape, they will bias the estimation of the contribution of a unit distance to decay in covariance.
-\
+\\\\
 To accommodate these heterogeneous processes, and to have a useful data visualization tool, we can estimate treat population's locations on the landscape as a random variable, and estimate them as part of our inference procedure.  Rich history of this type of data visualization, especially w/r/t PCA.
-\
-Our likelihood function is now _____.   (Spatial priors?)
-\
+\\\\
+Our likelihood function is now XXXXX.   (Spatial priors?)
+\\\\
 We can initiate from random locations to remove any influence of the observed map on the output via the prior.
-
+%
+\subsection*{Spatial Admixture Statistic}
+Given a model of isolation by distance and allele frequencies sampled at different points on a map, we can calculate (1) whether a population's genetic makeup is well predicted by that of its neighbors, and (2) whether a focal population has excess covariance with another sampled population.
+%
+\subsection*{Inference of Spatial Admixture}
+This signal of excess covariance over greater distances can be incorporated into out inference framework.  
 
 %%%%%%%%%
 
