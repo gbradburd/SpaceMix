@@ -2,14 +2,13 @@
 #PBS -q cmb
 #PBS -l nodes=1:ppn=16
 #PBS -l walltime=120:00:00
-#PBS -l pmem=40gb
-#PBS -l mem=1gb
-#PBS -l vmem=5gb
+#PBS -l mem=40gb
+#PBS -l vmem=45gb
 
 source /usr/usc/R/3.0.2/setup.sh
 
 cd /home/rcf-40/pralph/panfs/SpaceMix/batchjobs
 
-R --vanilla exe.space.mix.inference_test.R
+Rscript exe.space.mix.inference_test.R
 
 exit
