@@ -1,6 +1,6 @@
 options(error=recover)
 source("space.mix.MCMC.R")
-load("batchjobs/humangous_data.Robj")
+load("humangous_data.Robj")
 
 #continue.analysis <- make.continuing.params("~/Desktop/Dropbox/space.mix/data/globetrotter/globe_spacemix/globe_2/globe_2_space_MCMC_output1.Robj","~/Desktop/Dropbox/space.mix/data/globetrotter/globe_spacemix/globe_3/globe_2_continuing.params.Robj")
 
