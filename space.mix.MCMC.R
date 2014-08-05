@@ -1102,10 +1102,10 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 	
 	if(round.earth){
 		propose.new.location <<- propose.new.location.sphere
-		spacemix.dist <<- fields::rdist
+		spacemix.dist <<- fields::rdist.earth
 	} else {
 		propose.new.location <<- propose.new.location.plane
-		spacemix.dist <<- fields::rdist.earth
+		spacemix.dist <<- fields::rdist
 	}
 	
 	#Declare variables
