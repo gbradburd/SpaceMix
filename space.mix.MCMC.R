@@ -72,7 +72,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 				covariance.prime[,pop.to.update] <- tmp.cov
 			for(z in 1:length(nugget.gridpoints)){
 				nugget.prime[pop.to.update] <- nugget.gridpoints[z]
-				admixed.covariance.prime <- admixed.Covariance(covariance.prime,last.params$admix.proportions,nugget.prime,last.params$k,last.params$inv.mean.sample.sizes)
+				admixed.covariance.prime <- admixed.Covariance(covariance.prime,last.params$admix.proportions,nugget.prime,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 				transformed.covariance.prime <- transformed.Covariance(admixed.covariance.prime,last.params$projection.matrix)
 				lnL.array[x,y,z] <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
 				prior.prob.nugget.array[x,y,z] <- Prior_prob_nugget(nugget.prime)
@@ -92,7 +92,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 		new.params$prior_prob_nugget <- prior.prob.nugget.array[sampled.parameters.index]
 		new.params$D <- spacemix.dist(new.params$population.coordinates)
 		new.params$covariance <- Covariance(last.params$a0,last.params$aD,last.params$a2,new.params$D)
-		new.params$admixed.covariance <- admixed.Covariance(new.params$covariance,last.params$admix.proportions,new.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
+		new.params$admixed.covariance <- admixed.Covariance(new.params$covariance,last.params$admix.proportions,new.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 		new.params$transformed.covariance <- transformed.Covariance(new.params$admixed.covariance,last.params$projection.matrix)
 		new.params$LnL_freqs <- lnL.array[sampled.parameters.index]
 		new.params$moves$admix_target_location_moves[pop.to.update] <- new.params$moves$admix_target_location_moves[pop.to.update] + 1
@@ -126,7 +126,7 @@ Update_admixture_target_location <- function(last.params){
 		D_prime <- spacemix.dist(population.coordinates_prime[pop.to.update,1:2,drop=FALSE], population.coordinates_prime)
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
 		covariance_prime <- update.matrix(last.params$covariance,pop.to.update,tmp.covariance_prime)
-		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
+		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 				transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,
 																		last.params$projection.matrix)
 				LnL_freqs_prime <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
@@ -160,7 +160,7 @@ Update_admixture_source_location <- function(last.params){
 		D_prime <- spacemix.dist(population.coordinates_prime[ghost.to.update,1:2,drop=FALSE], population.coordinates_prime)
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
 		covariance_prime <- update.matrix(last.params$covariance,ghost.to.update,tmp.covariance_prime)
-		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
+		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 			transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,
 																	last.params$projection.matrix)
 				LnL_freqs_prime <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
@@ -186,7 +186,7 @@ Update_admixture_proportions <- function(last.params){
 	admix.proportions_prime[pop.to.update] <- admix.proportions_prime[pop.to.update] + rnorm(1,0,exp(last.params$lstps$admix_proportions_lstp[pop.to.update]))
 	prior_prob_admix_proportions_prime <- Prior_prob_admix_proportions(admix.proportions_prime)
 	if(is.finite(prior_prob_admix_proportions_prime)){
-		admixed.covariance_prime <- admixed.Covariance(last.params$covariance,admix.proportions_prime,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
+		admixed.covariance_prime <- admixed.Covariance(last.params$covariance,admix.proportions_prime,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 				transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,
 																		last.params$projection.matrix)
 				LnL_freqs_prime <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
@@ -210,7 +210,7 @@ Update_a0 <- function(last.params){
 	prior_prob_alpha0_prime <- Prior_prob_alpha0(a0_prime)
 	if(prior_prob_alpha0_prime != -Inf){
 		covariance_prime <- (last.params$covariance*last.params$a0)/a0_prime
-			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
+			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 			transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
 				if(metropolis_ratio(LnL_freqs_prime,prior_prob_alpha0_prime,last.params$LnL_freqs,last.params$prior_prob_alpha0)){
@@ -234,7 +234,7 @@ Update_aD <- function(last.params){
 	prior_prob_alphaD_prime <- Prior_prob_alphaD(aD_prime)
 	if(prior_prob_alphaD_prime != -Inf){
 		covariance_prime <- Covariance(last.params$a0,aD_prime,last.params$a2,last.params$D)
-			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
+			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 			transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
 				if(metropolis_ratio(LnL_freqs_prime,prior_prob_alphaD_prime,last.params$LnL_freqs,last.params$prior_prob_alphaD)){
@@ -258,7 +258,7 @@ Update_a2 <- function(last.params){
 		prior_prob_alpha2_prime <- Prior_prob_alpha2(a2_prime) 
 		if(prior_prob_alpha2_prime != -Inf) {
 			covariance_prime <- Covariance(last.params$a0,last.params$aD,a2_prime,last.params$D)
-				admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes)
+				admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 				transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
 					if(metropolis_ratio(LnL_freqs_prime,prior_prob_alpha2_prime,last.params$LnL_freqs,last.params$prior_prob_alpha2)){
@@ -378,14 +378,18 @@ Covariance <- function(a0,aD,a2,GeoDist) {
 	return(covariance)
 }
 
-admixed.Covariance <- function(covariance,admix.proportions,nugget,k,inv.mean.sample.sizes){
+admixed.Covariance <- function(covariance,admix.proportions,nugget,k,inv.mean.sample.sizes,ident.mat){
 	# recover()
-	w_k <- admix.proportions/2
-	admixed.Covariance <- 	tcrossprod((1-w_k),(1-w_k)) * 	covariance[1:k,1:k] + 
-							tcrossprod((1-w_k),(w_k)) 	* 	covariance[1:k,(k+1):(2*k)] +
-							tcrossprod(w_k,(1-w_k)) 	*	covariance[(k+1):(2*k),1:k] +
-							tcrossprod(w_k,w_k)			*	covariance[(k+1):(2*k),(k+1):(2*k)]
-	diag(admixed.Covariance) <- diag(admixed.Covariance) + nugget + inv.mean.sample.sizes #come back to this!  maybe just add identity matrix?
+	if(any(admix.proportions !=0)){
+		w_k <- admix.proportions/2
+		admixed.Covariance <- 	tcrossprod((1-w_k),(1-w_k)) * 	covariance[1:k,1:k] + 
+								tcrossprod((1-w_k),(w_k)) 	* 	covariance[1:k,(k+1):(2*k)] +
+								tcrossprod(w_k,(1-w_k)) 	*	covariance[(k+1):(2*k),1:k] +
+								tcrossprod(w_k,w_k)			*	covariance[(k+1):(2*k),(k+1):(2*k)]
+		admixed.Covariance <- admixed.Covariance + ident.mat * nugget + ident.mat * inv.mean.sample.sizes
+	} else {
+		admixed.Covariance <- covariance[1:k,1:k] + ident.mat * nugget + ident.mat * inv.mean.sample.sizes
+	}
 	return(admixed.Covariance)
 }
 
@@ -1123,7 +1127,8 @@ initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,
 						"nugget.grid.fineness" = gibbs.nugget.fineness,
 						"sd" = spacemix.data$sd,
 						"index.matrix" = spacemix.data$index.matrix,
-						"likelihood.option" = likelihood.option)
+						"likelihood.option" = likelihood.option,
+						"identity.matrix" = diag(k))
 	return(last.params)
 }
 
@@ -1227,7 +1232,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 							source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
 						}
 					covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
-					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes)
+					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes,diag(k))
 					transformed.covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
 					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],
 													covariance,admixed.covariance,transformed.covariance,
@@ -1818,16 +1823,17 @@ get.fstat.pop2 <- function(focal.pop,source.pop,observations,covariance,mean.sam
 }
 
 run.spacemix.analysis <- function(n.fast.reps,
+									fast.MCMC.ngen,
 									model.option,
 									data.type,
-									proj.mat.option,
-									sample.frequencies,
-									mean.sample.sizes,
-									counts,
-									sample.sizes,
-									sample.covariance,
-									target.spatial.prior.scale,
-									source.spatial.prior.scale,
+									proj.mat.option=NULL,
+									sample.frequencies=NULL,
+									mean.sample.sizes=NULL,
+									counts=NULL,
+									sample.sizes=NULL,
+									sample.covariance=NULL,
+									target.spatial.prior.scale=NULL,
+									source.spatial.prior.scale=NULL,
 									observed.X.coordinates,
 									observed.Y.coordinates,
 									round.earth,
@@ -1841,10 +1847,50 @@ run.spacemix.analysis <- function(n.fast.reps,
 									gibbs.spatial.fineness,
 									gibbs.step.frequency,
 									savefreq,
-									directory,
+									directory=NULL,
 									prefix){
-										
-	return(0)
+	fast.run.dirs <- unlist(lapply(1:n.fast.reps,FUN=function(i){paste("fast_run_",i,sep="")}))
+	
+	for(i in 1:n.fast.reps){
+		dir.create(fast.run.dirs[i])
+		setwd(fast.run.dirs[i])
+			MCMC(model.option,
+				data.type,
+				likelihood.option = "wishart",
+				proj.mat.option,
+				sample.frequencies,
+				mean.sample.sizes,
+				counts,
+				sample.sizes,
+				sample.covariance,
+				target.spatial.prior.scale,
+				source.spatial.prior.scale,
+				observed.X.coordinates,
+				observed.Y.coordinates,
+				round.earth,
+				k,
+				loci,
+				ngen = fast.MCMC.ngen,
+				printfreq,
+				samplefreq,
+				mixing.diagn.freq,
+				gibbs.nugget.fineness,
+				gibbs.spatial.fineness,
+				gibbs.step.frequency,
+				savefreq,
+				directory,
+                prefix=dir,
+				continue=FALSE,
+				continuing.params=NULL)
+		setwd("..")
+	}
+	last.probs <- numeric(n.fast.reps)
+	for(i in 1:n.fast.reps){
+		setwd(fast.run.dirs[i])
+			load(list.files()[grep("output",list.files())])
+				last.probs[i] <- Prob[length(which(Prob!=0))]
+		setwd("..")
+	}
 }
 
 

@@ -5,7 +5,7 @@ load(list.files()[grepl("dataset",list.files())])
 MCMC(
 	model.option = "target",						#no_movement,source,target,source_and_target
 	data.type = "counts",							#sample.covariance, sample.frequencies, counts
-	likelihood.option = "normal_approx",								#wishart, normal_approx
+	likelihood.option = "wishart",								#wishart, normal_approx
 	proj.mat.option = NULL,
 	sample.frequencies = NULL,
 	mean.sample.sizes = NULL,
@@ -19,14 +19,14 @@ MCMC(
 	round.earth = FALSE,
 	k = nrow(spacemix.dataset$population.coordinates),
 	loci = ncol(spacemix.dataset$allele.counts),
-	ngen = 1e7,
+	ngen = 1e5,
 	printfreq = 1e3,
 	samplefreq = 1e4,
-	mixing.diagn.freq = 50,
+	mixing.diagn.freq = 100,
 	gibbs.nugget.fineness=50,
 	gibbs.spatial.fineness=50,
 	gibbs.step.frequency = 1e10,
-	savefreq = 5e6,
+	savefreq = 1e5,
 	directory = NULL,
 	prefix = "",
 	continue = FALSE,
