@@ -1877,6 +1877,8 @@ run.spacemix.analysis <- function(n.fast.reps,
 									fast.MCMC.ngen,
 									model.option,
 									data.type,
+									fast.likelihood.option,
+									long.likelihood.option,
 									proj.mat.option=NULL,
 									sample.frequencies=NULL,
 									mean.sample.sizes=NULL,
@@ -1888,6 +1890,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 									spatial.prior.X.coordinates,
 									spatial.prior.Y.coordinates,
 									round.earth,
+									long.run.initial.parameters=NULL,
 									k,
 									loci,
 									ngen,
@@ -1900,58 +1903,60 @@ run.spacemix.analysis <- function(n.fast.reps,
 									savefreq,
 									directory=NULL,
 									prefix){
-#	recover()
-	fast.run.dirs <- unlist(lapply(1:n.fast.reps,FUN=function(i){paste("fast_run_",i,sep="")}))
-	
-	for(i in 1:n.fast.reps){
-		dir.create(fast.run.dirs[i])
-		setwd(fast.run.dirs[i])
-			MCMC(model.option = "target",
-				data.type = data.type,
-				likelihood.option = "wishart",
-				proj.mat.option = proj.mat.option,
-				sample.frequencies = sample.frequencies,
-				mean.sample.sizes = mean.sample.sizes,
-				counts = counts,
-				sample.sizes = sample.sizes,
-				sample.covariance = sample.covariance,
-				target.spatial.prior.scale = target.spatial.prior.scale,
-				source.spatial.prior.scale = source.spatial.prior.scale,
-				spatial.prior.X.coordinates = runif(k,min(spatial.prior.X.coordinates),max(spatial.prior.X.coordinates)),
-				spatial.prior.Y.coordinates = runif(k,min(spatial.prior.Y.coordinates),max(spatial.prior.Y.coordinates)),
-				round.earth = round.earth,
-				k = k,
-				loci = loci,
-				ngen = fast.MCMC.ngen,
-				printfreq = 1e3,
-				samplefreq = fast.MCMC.ngen/1e3,
-				mixing.diagn.freq = mixing.diagn.freq,
-				gibbs.nugget.fineness = gibbs.nugget.fineness,
-				gibbs.spatial.fineness = gibbs.spatial.fineness,
-				gibbs.step.frequency = gibbs.step.frequency,
-				savefreq = fast.MCMC.ngen/2,
-				directory = directory,
-                prefix=paste(fast.run.dirs[i],"_",sep=""),
-				continue=FALSE,
-				continuing.params=NULL)
+	if(n.fast.reps !=0){
+		fast.run.dirs <- unlist(lapply(1:n.fast.reps,FUN=function(i){paste("fast_run_",i,sep="")}))
+		for(i in 1:n.fast.reps){
+			dir.create(fast.run.dirs[i])
+			setwd(fast.run.dirs[i])
+				MCMC(model.option = "target",
+					data.type = data.type,
+					likelihood.option = fast.likelihood.option,
+					proj.mat.option = proj.mat.option,
+					sample.frequencies = sample.frequencies,
+					mean.sample.sizes = mean.sample.sizes,
+					counts = counts,
+					sample.sizes = sample.sizes,
+					sample.covariance = sample.covariance,
+					target.spatial.prior.scale = target.spatial.prior.scale,
+					source.spatial.prior.scale = source.spatial.prior.scale,
+					spatial.prior.X.coordinates = runif(k,min(spatial.prior.X.coordinates),max(spatial.prior.X.coordinates)),
+					spatial.prior.Y.coordinates = runif(k,min(spatial.prior.Y.coordinates),max(spatial.prior.Y.coordinates)),
+					round.earth = round.earth,
+					k = k,
+					loci = loci,
+					ngen = fast.MCMC.ngen,
+					printfreq = fast.MCMC.ngen/100,
+					samplefreq = fast.MCMC.ngen/1e3,
+					mixing.diagn.freq = mixing.diagn.freq,
+					gibbs.nugget.fineness = gibbs.nugget.fineness,
+					gibbs.spatial.fineness = gibbs.spatial.fineness,
+					gibbs.step.frequency = gibbs.step.frequency,
+					savefreq = fast.MCMC.ngen/2,
+					directory = directory,
+					prefix=paste(fast.run.dirs[i],"_",sep=""),
+					continue=FALSE,
+					continuing.params=NULL)
+			setwd("..")
+		}
+		last.probs <- numeric(n.fast.reps)
+		for(i in 1:n.fast.reps){
+			setwd(fast.run.dirs[i])
+				prob.list <- query.MCMC.output(list.files()[grep("output",list.files())],param.names="Prob")
+					last.probs[i] <- prob.list$Prob[length(which(prob.list$Prob!=0))]
+			setwd("..")
+		}
+		file.rename(fast.run.dirs[which.max(last.probs)],paste(fast.run.dirs[which.max(last.probs)],"_BestRun",sep=""))
+		setwd(list.files()[grep("BestRun",list.files())])
+			fast.run.initial.params <- query.MCMC.output(list.files()[grep("output",list.files())],last.param.names=c("a0","aD","a2","population.coordinates","nugget","admix.proportions"))
 		setwd("..")
+		dir.create(paste(prefix,"LongRun",sep="_"))
+		setwd(list.files()[grep("LongRun",list.files())])
+	} else {
+		fast.run.initial.parameters <- long.run.initial.parameters
 	}
-	last.probs <- numeric(n.fast.reps)
-	for(i in 1:n.fast.reps){
-		setwd(fast.run.dirs[i])
-			prob.list <- query.MCMC.output(list.files()[grep("output",list.files())],param.names="Prob")
-				last.probs[i] <- prob.list$Prob[length(which(prob.list$Prob!=0))]
-		setwd("..")
-	}
-	file.rename(fast.run.dirs[which.max(last.probs)],paste(fast.run.dirs[which.max(last.probs)],"_BestRun",sep=""))
-	setwd(list.files()[grep("BestRun",list.files())])
-		fast.run.initial.params <- query.MCMC.output(list.files()[grep("output",list.files())],last.param.names=c("a0","aD","a2","population.coordinates","nugget","admix.proportions"))
-	setwd("..")
-	dir.create(paste(prefix,"LongRun",sep="_"))
-	setwd(list.files()[grep("LongRun",list.files())])
 			MCMC(model.option = model.option,
 				data.type = data.type,
-				likelihood.option = "wishart",
+				likelihood.option = long.likelihood.option,
 				proj.mat.option = proj.mat.option,
 				sample.frequencies = sample.frequencies,
 				mean.sample.sizes = mean.sample.sizes,
@@ -1962,7 +1967,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 				source.spatial.prior.scale = source.spatial.prior.scale,
 				spatial.prior.X.coordinates = spatial.prior.X.coordinates,
 				spatial.prior.Y.coordinates = spatial.prior.Y.coordinates,
-				initial.parameters = fast.run.initial.params,
+				initial.parameters = fast.run.initial.parameters,
 				round.earth = round.earth,
 				k = k,
 				loci = loci,
