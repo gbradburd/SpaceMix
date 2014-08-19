@@ -1947,7 +1947,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 		}
 		file.rename(fast.run.dirs[which.max(last.probs)],paste(fast.run.dirs[which.max(last.probs)],"_BestRun",sep=""))
 		setwd(list.files()[grep("BestRun",list.files())])
-			fast.run.initial.params <- query.MCMC.output(list.files()[grep("output",list.files())],last.param.names=c("a0","aD","a2","population.coordinates","nugget","admix.proportions"))
+			fast.run.initial.parameters <- query.MCMC.output(list.files()[grep("output",list.files())],last.param.names=c("a0","aD","a2","population.coordinates","nugget","admix.proportions"))
 		setwd("..")
 		dir.create(paste(prefix,"LongRun",sep="_"))
 		setwd(list.files()[grep("LongRun",list.files())])
