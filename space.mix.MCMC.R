@@ -8,8 +8,8 @@ simulate.spacemix.dataset <- function(k,loci,admix.target,admix.source,admix.pro
 	#simulate population locations
 		sim.locations <- cbind(runif(2*k,-1,1),runif(2*k,-1,1))
 		sim.locations[k+admix.target,] <- sim.locations[admix.source,]
-		observed.X.coordinates <- sim.locations[(1:k),1]
-		observed.Y.coordinates <- sim.locations[(1:k),2]
+		spatial.prior.X.coordinates <- sim.locations[(1:k),1]
+		spatial.prior.Y.coordinates <- sim.locations[(1:k),2]
 	#generate spatial covariance matrix
 		sim.D <- fields::rdist(sim.locations)
 		mean.sample.sizes <- rowMeans(sample.sizes)
@@ -63,7 +63,7 @@ admix_target_location_and_nugget_gibbs_sampler <- function(last.params){
 	for(x in 1:length(X.gridpoints)){
 		for(y in 1:length(Y.gridpoints)){
 				coords.prime[pop.to.update,] <- c(X.gridpoints[x],Y.gridpoints[y])
-				prior.prob.admix.target.locations.array[x,y,] <- Prior_prob_admix_target_locations(coords.prime[1:last.params$k,],last.params$observed.X.coordinates,last.params$observed.Y.coordinates,last.params$target.spatial.prior.scale)
+				prior.prob.admix.target.locations.array[x,y,] <- Prior_prob_admix_target_locations(coords.prime[1:last.params$k,],last.params$spatial.prior.X.coordinates,last.params$spatial.prior.Y.coordinates,last.params$target.spatial.prior.scale)
 				tmp.cov <- Covariance(last.params$a0,
 									  last.params$aD,
 								  	  last.params$a2,
@@ -120,8 +120,8 @@ Update_admixture_target_location <- function(last.params){
 																			population.coordinates_prime[pop.to.update,2],
 																			exp(last.params$lstps$admix_target_location_lstp[pop.to.update]))
 		prior_prob_admix_target_locations_prime <- Prior_prob_admix_target_locations(population.coordinates_prime[1:last.params$k,],
-																						last.params$observed.X.coordinates,
-																						last.params$observed.Y.coordinates,
+																						last.params$spatial.prior.X.coordinates,
+																						last.params$spatial.prior.Y.coordinates,
 																						last.params$target.spatial.prior.scale)
 		D_prime <- spacemix.dist(population.coordinates_prime[pop.to.update,1:2,drop=FALSE], population.coordinates_prime)
 		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
@@ -308,10 +308,10 @@ metropolis_ratio <- function(LnL_prime,prior_prime,LnL,prior){
 	return(accept)
 }
 
-Prior_prob_admix_target_locations <- function(admix_target_locations,observed.X.coordinates,observed.Y.coordinates,target.spatial.prior.scale){
+Prior_prob_admix_target_locations <- function(admix_target_locations,spatial.prior.X.coordinates,spatial.prior.Y.coordinates,target.spatial.prior.scale){
 	prior_prob_admix_target_locations <- sum(-log(2*pi*target.spatial.prior.scale) + (-1/2) * 
-			((admix_target_locations[,1] - observed.X.coordinates)^2 / target.spatial.prior.scale + 
-				(admix_target_locations[,2] - observed.Y.coordinates)^2 / target.spatial.prior.scale))
+			((admix_target_locations[,1] - spatial.prior.X.coordinates)^2 / target.spatial.prior.scale + 
+				(admix_target_locations[,2] - spatial.prior.Y.coordinates)^2 / target.spatial.prior.scale))
 	return(prior_prob_admix_target_locations)
 }
 
@@ -636,16 +636,16 @@ initiate.admix.proportions <- function(k,model.option){
 	return(initiate.admix.proportions.list)
 }
 
-initiate.population.coordinates <- function(observed.X.coordinates,observed.Y.coordinates,k){
+initiate.population.coordinates <- function(spatial.prior.X.coordinates,spatial.prior.Y.coordinates,k){
 	population.coordinates <- 	rbind(
-		cbind(observed.X.coordinates,
-			observed.Y.coordinates),
+		cbind(spatial.prior.X.coordinates,
+			spatial.prior.Y.coordinates),
 		cbind(	runif(k, 
-			min = min(observed.X.coordinates), 
-			max = max(observed.X.coordinates)),
+			min = min(spatial.prior.X.coordinates), 
+			max = max(spatial.prior.X.coordinates)),
 		runif(k, 
-			min = min(observed.Y.coordinates), 
-			max = max(observed.Y.coordinates)))
+			min = min(spatial.prior.Y.coordinates), 
+			max = max(spatial.prior.Y.coordinates)))
 	)
 	return(population.coordinates)
 }
@@ -1096,7 +1096,7 @@ make.update.all.lstps.function <- function(model.option){
 
 initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,spacemix.data,population.coordinates,admix.proportions,a0,aD,a2,nugget,covariance,admixed.covariance,transformed.covariance,
 						k,LnL_freqs,prior_prob_alpha0,prior_prob_alphaD,prior_prob_alpha2,prior_prob_nugget,prior_prob_admix_proportions,prior_prob_admix_target_locations,prior_prob_admix_source_locations,
-						D,observed.X.coordinates,observed.Y.coordinates,target.spatial.prior.scale,source.spatial.prior.scale,centroid,gibbs.spatial.fineness,gibbs.nugget.fineness){
+						D,spatial.prior.X.coordinates,spatial.prior.Y.coordinates,target.spatial.prior.scale,source.spatial.prior.scale,centroid,gibbs.spatial.fineness,gibbs.nugget.fineness){
 	last.params <- list("sample.covariance" = spacemix.data$sample.covariance,
 						"projection.matrix" = spacemix.data$projection.matrix,						
 						"population.coordinates" = population.coordinates,
@@ -1117,8 +1117,8 @@ initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,
 						"moves" = initiate.moves.list(model.option,k),"accept" = initiate.accept.list(model.option,k),
 						"loci" = spacemix.data$loci,"D" = D,
 						"inv.mean.sample.sizes" = spacemix.data$inv.mean.sample.sizes,
-						"observed.X.coordinates" = observed.X.coordinates,
-						"observed.Y.coordinates" = observed.Y.coordinates,
+						"spatial.prior.X.coordinates" = spatial.prior.X.coordinates,
+						"spatial.prior.Y.coordinates" = spatial.prior.Y.coordinates,
 						"target.spatial.prior.scale" = target.spatial.prior.scale,
 						"source.spatial.prior.scale" = source.spatial.prior.scale,
 						"centroid" = centroid,
@@ -1147,8 +1147,9 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				sample.covariance = NULL,
 				target.spatial.prior.scale = NULL,
 				source.spatial.prior.scale = NULL,
-				observed.X.coordinates,
-				observed.Y.coordinates,
+				spatial.prior.X.coordinates,
+				spatial.prior.Y.coordinates,
+				initial.parameters = NULL,		#a0,aD,a2,population.coordinates,admix.proportions
 				round.earth,
 				k,
 				loci,
@@ -1215,21 +1216,43 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				badness.counter <- 0
 
 			while(Prob[1] == -Inf | any(eigen(admixed.covariance)$values<0) && badness.counter < 100){
-						nugget[,1] <- rexp(k)
-						a0[1] <- rexp(1,1/100)
-						aD[1] <- rexp(1,1)
-						a2[1] <- runif(1,0.1,2)
-						population.coordinates[[1]] <- 	initiate.population.coordinates(observed.X.coordinates,observed.Y.coordinates,k)
-						initiate.admix.proportions.list <- initiate.admix.proportions(k,model.option)
-						admix.proportions[,1] <- initiate.admix.proportions.list$admix.proportions
-						prior_prob_admix_proportions <- initiate.admix.proportions.list$prior_prob_admix_proportions
-					distances[[1]] <- spacemix.dist(population.coordinates[[1]])
-						centroid <- c(mean(observed.X.coordinates),mean(observed.Y.coordinates))
-						if(is.null(target.spatial.prior.scale)){
-							target.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) / 2
-						}
-						if(is.null(source.spatial.prior.scale)){
-							source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
+						if(!is.null(initial.parameters)){
+							nugget[,1] <- initial.parameters$nugget
+							a0[1] <- initial.parameters$a0
+							aD[1] <- initial.parameters$aD
+							a2[1] <- initial.parameters$a2
+							population.coordinates[[1]] <- 	initial.parameters$population.coordinates
+							admix.proportions[,1] <- initial.parameters$admix.proportions
+							prior_prob_admix_proportions <- Prior_prob_admix_proportions(admix.proportions[,1])
+							distances[[1]] <- spacemix.dist(population.coordinates[[1]])
+							centroid <- c(mean(spatial.prior.X.coordinates),mean(spatial.prior.Y.coordinates))
+							if(is.null(target.spatial.prior.scale)){
+								target.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) / 2
+							}
+							if(is.null(source.spatial.prior.scale)){
+								source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
+							}
+							covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
+							admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes,diag(k))
+							transformed.covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
+							tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],covariance,admixed.covariance,transformed.covariance,population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
+						} else {
+							nugget[,1] <- rexp(k)
+							a0[1] <- rexp(1,1/100)
+							aD[1] <- rexp(1,1)
+							a2[1] <- runif(1,0.1,2)
+							population.coordinates[[1]] <- 	initiate.population.coordinates(spatial.prior.X.coordinates,spatial.prior.Y.coordinates,k)
+							initiate.admix.proportions.list <- initiate.admix.proportions(k,model.option)
+							admix.proportions[,1] <- initiate.admix.proportions.list$admix.proportions
+							prior_prob_admix_proportions <- initiate.admix.proportions.list$prior_prob_admix_proportions
+							distances[[1]] <- spacemix.dist(population.coordinates[[1]])
+							centroid <- c(mean(spatial.prior.X.coordinates),mean(spatial.prior.Y.coordinates))
+							if(is.null(target.spatial.prior.scale)){
+								target.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) / 2
+							}
+							if(is.null(source.spatial.prior.scale)){
+								source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
+							}
 						}
 					covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
 					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes,diag(k))
@@ -1247,7 +1270,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 					cat("Pr(a2): ",prior_prob_alpha2,"\n")
 				prior_prob_nugget <- Prior_prob_nugget(nugget[,1])
 					cat("Pr(nugget): ",prior_prob_nugget,"\n")
-				prior_prob_admix_target_locations <- Prior_prob_admix_target_locations(population.coordinates[[1]][1:k,],observed.X.coordinates,observed.Y.coordinates,target.spatial.prior.scale)
+				prior_prob_admix_target_locations <- Prior_prob_admix_target_locations(population.coordinates[[1]][1:k,],spatial.prior.X.coordinates,spatial.prior.Y.coordinates,target.spatial.prior.scale)
 					cat("Pr(admix_target_locations): ",prior_prob_admix_target_locations,"\n")
 				prior_prob_admix_source_locations <- Prior_prob_admix_source_locations(population.coordinates[[1]][(k+1):(2*k),],centroid,source.spatial.prior.scale)
 					cat("Pr(admix_source_locations): ",prior_prob_admix_source_locations,"\n")
@@ -1268,7 +1291,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 											prior_prob_alpha0 = prior_prob_alpha0,prior_prob_alphaD = prior_prob_alphaD,prior_prob_alpha2 = prior_prob_alpha2,
 											prior_prob_nugget = prior_prob_nugget,prior_prob_admix_proportions = prior_prob_admix_proportions,
 											prior_prob_admix_target_locations = prior_prob_admix_target_locations,prior_prob_admix_source_locations = prior_prob_admix_source_locations,
-											D = distances[[1]],observed.X.coordinates = observed.X.coordinates,observed.Y.coordinates = observed.Y.coordinates,
+											D = distances[[1]],spatial.prior.X.coordinates = spatial.prior.X.coordinates,spatial.prior.Y.coordinates = spatial.prior.Y.coordinates,
 											target.spatial.prior.scale = target.spatial.prior.scale,source.spatial.prior.scale = source.spatial.prior.scale,
 											centroid = centroid,gibbs.spatial.fineness = gibbs.spatial.fineness,gibbs.nugget.fineness = gibbs.nugget.fineness)
 		last.ngen <- 0
@@ -1357,8 +1380,8 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 											admix_target_location_accept = continuing.params$admix_target_location_accept,
 											admix_proportions_accept = continuing.params$admix_proportions_accept,
 											D = distances[[1]],
-											observed.X.coordinates = continuing.params$observed.X.coordinates,
-											observed.Y.coordinates = continuing.params$observed.Y.coordinates,
+											spatial.prior.X.coordinates = continuing.params$spatial.prior.X.coordinates,
+											spatial.prior.Y.coordinates = continuing.params$spatial.prior.Y.coordinates,
 											target.spatial.prior.scale = continuing.params$target.spatial.prior.scale,
 											source.spatial.prior.scale = continuing.params$source.spatial.prior.scale,
 											centroid = continuing.params$centroid,
@@ -1471,7 +1494,7 @@ make.continuing.params <- function(MCMC.output,file.name){
 									"a0_moves" = a0_moves,"aD_moves" = aD_moves,"a2_moves" = a2_moves,
 									"nugget_moves" = nugget_moves,"admix_source_location_moves" = admix_source_location_moves, 
 									"admix_target_location_moves" = admix_target_location_moves,"admix_proportions_moves" = admix_proportions_moves,
-									"observed.X.coordinates" = observed.X.coordinates,"observed.Y.coordinates" = observed.Y.coordinates, 
+									"spatial.prior.X.coordinates" = spatial.prior.X.coordinates,"spatial.prior.Y.coordinates" = spatial.prior.Y.coordinates, 
 									"X.grid.fineness" = X.grid.fineness,"Y.grid.fineness" = Y.grid.fineness,"nugget.grid.fineness" = nugget.grid.fineness,
 									"a0.lstp" = a0.lstp,"aD.lstp" = aD.lstp,"a2.lstp" = a2.lstp,
 									"nugget.lstp" = nugget.lstp,"admix.target.location.lstp" = admix.target.location.lstp,
@@ -1667,7 +1690,7 @@ visualize.admix.posterior <- function(MCMC.output.object,burnin,thinning,procrus
 	x <- seq(from = burnin, to = length(which(Prob!=0)), by = thinning)
 		population.coordinates <- population.coordinates[x]
 		admix.proportions <- admix.proportions[x]
-		observed.locations <- cbind(last.params$observed.X.coordinates,last.params$observed.Y.coordinates)
+		observed.locations <- cbind(last.params$spatial.prior.X.coordinates,last.params$spatial.prior.Y.coordinates)
 	if(procrustes){
 		proc.target.pop.coords <- lapply(1:length(population.coordinates),function(i){procrusteez(observed.locations,head(population.coordinates[[i]],n=last.params$k),last.params$k,option=1)})
 		if(!is.null(source)){
@@ -1822,6 +1845,34 @@ get.fstat.pop2 <- function(focal.pop,source.pop,observations,covariance,mean.sam
 	return(fstat)
 }
 
+}
+
+query.MCMC.output <- function(MCMC.output,param.names=NULL,last.param.names=NULL){
+	if(!is.null(param.names)){
+		param.list <- vector("list",length=length(param.names))
+		names(param.list) <- param.names
+		load(MCMC.output)
+			for(i in 1:length(param.names)){
+				param.list[[param.names[i]]] <- get(param.names[i])
+			}
+	}
+	if(!is.null(last.param.names)){
+		last.param.list <- vector("list",length=length(last.param.names))
+		names(last.param.list) <- last.param.names
+		load(MCMC.output)
+			for(i in 1:length(last.param.names)){
+				last.param.list[[last.param.names[i]]] <- get(last.param.names[i],last.params)
+			}
+	}
+	if(!is.null(param.names) & !is.null(last.param.names)){
+		param.list <- c(param.list,last.param.list)
+	}
+	if(is.null(param.names) & !is.null(last.param.names)){
+		param.list <- last.param.list
+	}
+	return(param.list)
+}
+
 run.spacemix.analysis <- function(n.fast.reps,
 									fast.MCMC.ngen,
 									model.option,
@@ -1834,8 +1885,8 @@ run.spacemix.analysis <- function(n.fast.reps,
 									sample.covariance=NULL,
 									target.spatial.prior.scale=NULL,
 									source.spatial.prior.scale=NULL,
-									observed.X.coordinates,
-									observed.Y.coordinates,
+									spatial.prior.X.coordinates,
+									spatial.prior.Y.coordinates,
 									round.earth,
 									k,
 									loci,
@@ -1849,37 +1900,38 @@ run.spacemix.analysis <- function(n.fast.reps,
 									savefreq,
 									directory=NULL,
 									prefix){
+#	recover()
 	fast.run.dirs <- unlist(lapply(1:n.fast.reps,FUN=function(i){paste("fast_run_",i,sep="")}))
 	
 	for(i in 1:n.fast.reps){
 		dir.create(fast.run.dirs[i])
 		setwd(fast.run.dirs[i])
-			MCMC(model.option,
-				data.type,
+			MCMC(model.option = "target",
+				data.type = data.type,
 				likelihood.option = "wishart",
-				proj.mat.option,
-				sample.frequencies,
-				mean.sample.sizes,
-				counts,
-				sample.sizes,
-				sample.covariance,
-				target.spatial.prior.scale,
-				source.spatial.prior.scale,
-				observed.X.coordinates,
-				observed.Y.coordinates,
-				round.earth,
-				k,
-				loci,
+				proj.mat.option = proj.mat.option,
+				sample.frequencies = sample.frequencies,
+				mean.sample.sizes = mean.sample.sizes,
+				counts = counts,
+				sample.sizes = sample.sizes,
+				sample.covariance = sample.covariance,
+				target.spatial.prior.scale = target.spatial.prior.scale,
+				source.spatial.prior.scale = source.spatial.prior.scale,
+				spatial.prior.X.coordinates = runif(k,min(spatial.prior.X.coordinates),max(spatial.prior.X.coordinates)),
+				spatial.prior.Y.coordinates = runif(k,min(spatial.prior.Y.coordinates),max(spatial.prior.Y.coordinates)),
+				round.earth = round.earth,
+				k = k,
+				loci = loci,
 				ngen = fast.MCMC.ngen,
-				printfreq,
-				samplefreq,
-				mixing.diagn.freq,
-				gibbs.nugget.fineness,
-				gibbs.spatial.fineness,
-				gibbs.step.frequency,
-				savefreq,
-				directory,
-                prefix=dir,
+				printfreq = 1e3,
+				samplefreq = fast.MCMC.ngen/1e3,
+				mixing.diagn.freq = mixing.diagn.freq,
+				gibbs.nugget.fineness = gibbs.nugget.fineness,
+				gibbs.spatial.fineness = gibbs.spatial.fineness,
+				gibbs.step.frequency = gibbs.step.frequency,
+				savefreq = fast.MCMC.ngen/2,
+				directory = directory,
+                prefix=paste(fast.run.dirs[i],"_",sep=""),
 				continue=FALSE,
 				continuing.params=NULL)
 		setwd("..")
@@ -1887,16 +1939,60 @@ run.spacemix.analysis <- function(n.fast.reps,
 	last.probs <- numeric(n.fast.reps)
 	for(i in 1:n.fast.reps){
 		setwd(fast.run.dirs[i])
-			load(list.files()[grep("output",list.files())])
-				last.probs[i] <- Prob[length(which(Prob!=0))]
+			prob.list <- query.MCMC.output(list.files()[grep("output",list.files())],param.names="Prob")
+				last.probs[i] <- prob.list$Prob[length(which(prob.list$Prob!=0))]
 		setwd("..")
 	}
+	file.rename(fast.run.dirs[which.max(last.probs)],paste(fast.run.dirs[which.max(last.probs)],"_BestRun",sep=""))
+	setwd(list.files()[grep("BestRun",list.files())])
+		fast.run.initial.params <- query.MCMC.output(list.files()[grep("output",list.files())],last.param.names=c("a0","aD","a2","population.coordinates","nugget","admix.proportions"))
+	setwd("..")
+	dir.create(paste(prefix,"LongRun",sep="_"))
+	setwd(list.files()[grep("LongRun",list.files())])
+			MCMC(model.option = model.option,
+				data.type = data.type,
+				likelihood.option = "wishart",
+				proj.mat.option = proj.mat.option,
+				sample.frequencies = sample.frequencies,
+				mean.sample.sizes = mean.sample.sizes,
+				counts = counts,
+				sample.sizes = sample.sizes,
+				sample.covariance = sample.covariance,
+				target.spatial.prior.scale = target.spatial.prior.scale,
+				source.spatial.prior.scale = source.spatial.prior.scale,
+				spatial.prior.X.coordinates = spatial.prior.X.coordinates,
+				spatial.prior.Y.coordinates = spatial.prior.Y.coordinates,
+				initial.parameters = fast.run.initial.params,
+				round.earth = round.earth,
+				k = k,
+				loci = loci,
+				ngen = ngen,
+				printfreq = printfreq,
+				samplefreq = samplefreq,
+				mixing.diagn.freq = mixing.diagn.freq,
+				gibbs.nugget.fineness = gibbs.nugget.fineness, 
+				gibbs.spatial.fineness = gibbs.spatial.fineness,
+				gibbs.step.frequency = gibbs.step.frequency,
+				savefreq = savefreq,
+				directory = directory,
+                prefix=prefix,
+				continue=FALSE,
+				continuing.params=NULL)
+	return("analysis completed.")
 }
 
 
+
+
+test1 <- function(MCMC.output,ngen){
+	cat("outside",ngen,"\n")
+	test2(MCMC.output)
+	cat("outside",ngen,"\n")	
 }
 
-
-
+test2 <- function(MCMC.output){
+	load(MCMC.output)
+	cat("inside",ngen,"\n")
+}
 
 
