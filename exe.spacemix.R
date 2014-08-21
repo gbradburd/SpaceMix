@@ -1,4 +1,3 @@
-setwd("~/Desktop/tmp")
 options(error=recover)
 source(list.files()[grepl("space.mix.MCMC",list.files())])
 load(list.files()[grepl("dataset",list.files())])

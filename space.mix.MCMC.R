@@ -506,7 +506,7 @@ get.cov.variance <- function(k,mcn.freqs,mean.sample.cov,loci){
 	var.sample.cov <- matrix(0,nrow=k,ncol=k)
 		for(i in 1:k){
 			for(j in 1:k){
-				var.sample.cov[i,j] <- mean((mcn.freqs[i,]*mcn.freqs[j,])^2 - mean.sample.cov[i,j])
+				var.sample.cov[i,j] <- mean((mcn.freqs[i,]*mcn.freqs[j,] - mean.sample.cov[i,j])^2)
 			}
 		}
 		var.sample.cov <- (1/(loci-1)) * var.sample.cov
@@ -1216,51 +1216,40 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				badness.counter <- 0
 
 			while(Prob[1] == -Inf | any(eigen(admixed.covariance)$values<0) && badness.counter < 100){
-						if(!is.null(initial.parameters)){
-							nugget[,1] <- initial.parameters$nugget
-							a0[1] <- initial.parameters$a0
-							aD[1] <- initial.parameters$aD
-							a2[1] <- initial.parameters$a2
-							population.coordinates[[1]] <- 	initial.parameters$population.coordinates
-							admix.proportions[,1] <- initial.parameters$admix.proportions
-							prior_prob_admix_proportions <- Prior_prob_admix_proportions(admix.proportions[,1])
-							distances[[1]] <- spacemix.dist(population.coordinates[[1]])
-							centroid <- c(mean(spatial.prior.X.coordinates),mean(spatial.prior.Y.coordinates))
-							if(is.null(target.spatial.prior.scale)){
-								target.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) / 2
-							}
-							if(is.null(source.spatial.prior.scale)){
-								source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
-							}
-							covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
-							admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes,diag(k))
-							transformed.covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
-							tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],covariance,admixed.covariance,transformed.covariance,population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
-						} else {
-							nugget[,1] <- rexp(k)
-							a0[1] <- rexp(1,1/100)
-							aD[1] <- rexp(1,1)
-							a2[1] <- runif(1,0.1,2)
-							population.coordinates[[1]] <- 	initiate.population.coordinates(spatial.prior.X.coordinates,spatial.prior.Y.coordinates,k)
-							initiate.admix.proportions.list <- initiate.admix.proportions(k,model.option)
-							admix.proportions[,1] <- initiate.admix.proportions.list$admix.proportions
-							prior_prob_admix_proportions <- initiate.admix.proportions.list$prior_prob_admix_proportions
-							distances[[1]] <- spacemix.dist(population.coordinates[[1]])
-							centroid <- c(mean(spatial.prior.X.coordinates),mean(spatial.prior.Y.coordinates))
-							if(is.null(target.spatial.prior.scale)){
-								target.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) / 2
-							}
-							if(is.null(source.spatial.prior.scale)){
-								source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
-							}
-						}
+					if(!is.null(initial.parameters$nugget)){
+						nugget[,1] <- initial.parameters$nugget
+					} else { nugget[,1] <- rexp(k) }
+					if(!is.null(initial.parameters$a0)){
+						a0[1] <- initial.parameters$a0
+					} else { a0[1] <- rexp(1,1/100) }
+					if(!is.null(initial.parameters$aD)){
+						aD[1] <- initial.parameters$aD
+					} else { aD[1] <- rexp(1,1) }
+					if(!is.null(initial.parameters$a2)){
+						a2[1] <- initial.parameters$a2
+					} else { a2[1] <- runif(1,0.1,2) }
+					if(!is.null(initial.parameters$population.coordinates)){
+						population.coordinates[[1]] <- 	initiate.population.coordinates(initial.parameters$population.coordinates[,1],initial.parameters$population.coordinates[,2],k)
+					} else { population.coordinates[[1]] <-	initiate.population.coordinates(spatial.prior.X.coordinates,spatial.prior.Y.coordinates,k) }
+					if(!is.null(initial.parameters$admix.proportions)){
+						admix.proportions[,1] <- initial.parameters$admix.proportions
+						prior_prob_admix_proportions <- Prior_prob_admix_proportions(admix.proportions[,1])
+					} else { initiate.admix.proportions.list <- initiate.admix.proportions(k,model.option)
+								admix.proportions[,1] <- initiate.admix.proportions.list$admix.proportions 
+								prior_prob_admix_proportions <- initiate.admix.proportions.list$prior_prob_admix_proportions}
+					distances[[1]] <- spacemix.dist(population.coordinates[[1]])
+					centroid <- c(mean(spatial.prior.X.coordinates),mean(spatial.prior.Y.coordinates))
+					if(is.null(target.spatial.prior.scale)){
+						target.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) / 2
+					}
+					if(is.null(source.spatial.prior.scale)){
+						source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
+					}
 					covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
 					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes,diag(k))
 					transformed.covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
-					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],
-													covariance,admixed.covariance,transformed.covariance,
-													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
-				LnL_freqs[1] <- likelihood(likelihood.option,spacemix.data$sample.covariance, transformed.covariance,spacemix.data$index.matrix,spacemix.data$sd,loci)
+					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],covariance,admixed.covariance,transformed.covariance,population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
+				LnL_freqs[1] <- likelihood(likelihood.option,spacemix.data$sample.covariance, transformed.covariance,spacemix.data$index.matrix,spacemix.data$sd,spacemix.data$loci)
 					cat("LnL: ",LnL_freqs[1],"\n")
 				prior_prob_alpha0 <- Prior_prob_alpha0(a0[1])
 					cat("Pr(a0): ",prior_prob_alpha0,"\n")
@@ -1908,6 +1897,11 @@ run.spacemix.analysis <- function(n.fast.reps,
 		for(i in 1:n.fast.reps){
 			dir.create(fast.run.dirs[i])
 			setwd(fast.run.dirs[i])
+			random.initial.population.coordinates <- cbind( runif(k,min(spatial.prior.X.coordinates),
+																	max(spatial.prior.X.coordinates)),
+															runif(k,min(spatial.prior.Y.coordinates),
+																	max(spatial.prior.Y.coordinates)))
+			initial.parameters <- list("population.coordinates" = random.initial.population.coordinates)
 				MCMC(model.option = "target",
 					data.type = data.type,
 					likelihood.option = fast.likelihood.option,
@@ -1919,13 +1913,14 @@ run.spacemix.analysis <- function(n.fast.reps,
 					sample.covariance = sample.covariance,
 					target.spatial.prior.scale = target.spatial.prior.scale,
 					source.spatial.prior.scale = source.spatial.prior.scale,
-					spatial.prior.X.coordinates = runif(k,min(spatial.prior.X.coordinates),max(spatial.prior.X.coordinates)),
-					spatial.prior.Y.coordinates = runif(k,min(spatial.prior.Y.coordinates),max(spatial.prior.Y.coordinates)),
+					spatial.prior.X.coordinates = spatial.prior.X.coordinates,
+					spatial.prior.Y.coordinates = spatial.prior.Y.coordinates,
 					round.earth = round.earth,
+					initial.parameters = initial.parameters,
 					k = k,
 					loci = loci,
 					ngen = fast.MCMC.ngen,
-					printfreq = fast.MCMC.ngen/100,
+					printfreq = 1e3,
 					samplefreq = fast.MCMC.ngen/1e3,
 					mixing.diagn.freq = mixing.diagn.freq,
 					gibbs.nugget.fineness = gibbs.nugget.fineness,
@@ -1983,21 +1978,6 @@ run.spacemix.analysis <- function(n.fast.reps,
                 prefix=prefix,
 				continue=FALSE,
 				continuing.params=NULL)
+	setwd("..")
 	return("analysis completed.")
 }
-
-
-
-
-test1 <- function(MCMC.output,ngen){
-	cat("outside",ngen,"\n")
-	test2(MCMC.output)
-	cat("outside",ngen,"\n")	
-}
-
-test2 <- function(MCMC.output){
-	load(MCMC.output)
-	cat("inside",ngen,"\n")
-}
-
-
