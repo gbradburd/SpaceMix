@@ -1229,7 +1229,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 						a2[1] <- initial.parameters$a2
 					} else { a2[1] <- runif(1,0.1,2) }
 					if(!is.null(initial.parameters$population.coordinates)){
-						population.coordinates[[1]] <- 	initiate.population.coordinates(initial.parameters$population.coordinates[,1],initial.parameters$population.coordinates[,2],k)
+						population.coordinates[[1]] <- 	initial.parameters$population.coordinates
 					} else { population.coordinates[[1]] <-	initiate.population.coordinates(spatial.prior.X.coordinates,spatial.prior.Y.coordinates,k) }
 					if(!is.null(initial.parameters$admix.proportions)){
 						admix.proportions[,1] <- initial.parameters$admix.proportions
@@ -1897,9 +1897,9 @@ run.spacemix.analysis <- function(n.fast.reps,
 		for(i in 1:n.fast.reps){
 			dir.create(fast.run.dirs[i])
 			setwd(fast.run.dirs[i])
-			random.initial.population.coordinates <- cbind( runif(k,min(spatial.prior.X.coordinates),
+			random.initial.population.coordinates <- cbind( runif(2*k,min(spatial.prior.X.coordinates),
 																	max(spatial.prior.X.coordinates)),
-															runif(k,min(spatial.prior.Y.coordinates),
+															runif(2*k,min(spatial.prior.Y.coordinates),
 																	max(spatial.prior.Y.coordinates)))
 			initial.parameters <- list("population.coordinates" = random.initial.population.coordinates)
 				MCMC(model.option = "target",
