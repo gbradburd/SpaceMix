@@ -341,7 +341,7 @@ Prior_prob_nugget <- function(nugget){
 }
 
 Prior_prob_admix_proportions <- function(admix_proportions){
-	sum(dbeta(admix_proportions,shape1=1,shape2=50,log=TRUE))
+	sum(dbeta(admix_proportions,shape1=1,shape2=100,log=TRUE))
 }
 
 normal.lnL <- function(sample.cov,par.cov,sd,index.matrix){
