@@ -1240,10 +1240,10 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 					distances[[1]] <- spacemix.dist(population.coordinates[[1]])
 					centroid <- c(mean(spatial.prior.X.coordinates),mean(spatial.prior.Y.coordinates))
 					if(is.null(target.spatial.prior.scale)){
-						target.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) / 2
+						target.spatial.prior.scale <- mean(spacemix.dist(cbind(spatial.prior.X.coordinates,spatial.prior.Y.coordinates))) / 2
 					}
 					if(is.null(source.spatial.prior.scale)){
-						source.spatial.prior.scale <- mean(distances[[1]][1:k,1:k]) * 2
+						source.spatial.prior.scale <- mean(spacemix.dist(cbind(spatial.prior.X.coordinates,spatial.prior.Y.coordinates))) * 2
 					}
 					covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
 					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes,diag(k))
@@ -1864,7 +1864,8 @@ query.MCMC.output <- function(MCMC.output,param.names=NULL,last.param.names=NULL
 
 run.spacemix.analysis <- function(n.fast.reps,
 									fast.MCMC.ngen,
-									model.option,
+									fast.model.option,
+									long.model.option,
 									data.type,
 									fast.likelihood.option,
 									long.likelihood.option,
@@ -1897,12 +1898,13 @@ run.spacemix.analysis <- function(n.fast.reps,
 		for(i in 1:n.fast.reps){
 			dir.create(fast.run.dirs[i])
 			setwd(fast.run.dirs[i])
-			random.initial.population.coordinates <- cbind( runif(2*k,min(spatial.prior.X.coordinates),
-																	max(spatial.prior.X.coordinates)),
-															runif(2*k,min(spatial.prior.Y.coordinates),
-																	max(spatial.prior.Y.coordinates)))
+			random.initial.population.coordinates <- cbind(rep(0,2*k),rep(0,2*k))
+#			random.initial.population.coordinates <- cbind( runif(2*k,min(spatial.prior.X.coordinates),
+#																	max(spatial.prior.X.coordinates)),
+#															runif(2*k,min(spatial.prior.Y.coordinates),
+#																	max(spatial.prior.Y.coordinates)))
 			initial.parameters <- list("population.coordinates" = random.initial.population.coordinates)
-				MCMC(model.option = "target",
+				MCMC(model.option = fast.model.option,
 					data.type = data.type,
 					likelihood.option = fast.likelihood.option,
 					proj.mat.option = proj.mat.option,
@@ -1949,7 +1951,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 	} else {
 		fast.run.initial.parameters <- long.run.initial.parameters
 	}
-			MCMC(model.option = model.option,
+			MCMC(model.option = long.model.option,
 				data.type = data.type,
 				likelihood.option = long.likelihood.option,
 				proj.mat.option = proj.mat.option,

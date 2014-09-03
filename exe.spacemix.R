@@ -2,11 +2,10 @@ options(error=recover)
 source(list.files()[grepl("space.mix.MCMC",list.files())])
 load(list.files()[grepl("dataset",list.files())])
 
-
-
 run.spacemix.analysis(	n.fast.reps = 0,
 						fast.MCMC.ngen = 1e3,
-						model.option = "target",
+						fast.model.option = "target",
+						long.model.option = "source_and_target",
 						data.type = "counts",
 						fast.likelihood.option = "normal_approx",
 						long.likelihood.option = "wishart",
