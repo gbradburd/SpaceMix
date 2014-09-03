@@ -1213,9 +1213,10 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				Prob[1] <- -Inf
 				covariance <- matrix(0,nrow=k*2,ncol=k*2)
   				admixed.covariance <- matrix(0,nrow=k,ncol=k)
+				transformed.covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
 				badness.counter <- 0
 
-			while(Prob[1] == -Inf | any(eigen(admixed.covariance)$values<0) && badness.counter < 100){
+			while(Prob[1] == -Inf  && badness.counter < 100){
 					if(!is.null(initial.parameters$nugget)){
 						nugget[,1] <- initial.parameters$nugget
 					} else { nugget[,1] <- rexp(k) }
@@ -1271,7 +1272,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				if(!is.finite(Prob[1])){													
 					stop("Initial probability of model is NEGATIVE INFINITY! Please attempt to initiate chain again.")
 				} else {
-					stop("the initial transformed covariance matrix is not positive definite! Attempt to re-initialize MCMC!")
+					stop("Something has gone wrong with the attempt to initialize the MCMC! Please take a close look at your data and try again")
 				}
 			}
 		}	
