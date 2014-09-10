@@ -585,24 +585,24 @@ spacemix.data <- function(data.type,likelihood.option,proj.mat.option=NULL,sampl
 	return(spacemix.data)
 }
 
-propose.new.location.plane <- function(lat,long,dist.std){
-	coords_prime <- c(lat,long) + rnorm(n = 2, mean = 0, sd = dist.std)
+propose.new.location.plane <- function(long,lat,dist.std){
+	coords_prime <- c(long,lat) + rnorm(n = 2, mean = 0, sd = dist.std)
 	return(coords_prime)
 }
 
-sphere.hop <- function(lat,long,distance,bearing){
+sphere.hop <- function(long,lat,distance,bearing){
 	new.lat <- asin(sin(lat) * cos(distance) + cos(lat) * sin(distance) * cos(bearing))
 	dlong <- atan2(sin(bearing)*sin(distance)*cos(lat),cos(distance)-sin(lat)*sin(new.lat))
 	new.long <- (long - dlong + pi) %% (2*pi) - pi
 	return(cbind(new.long,new.lat))
 }
 
-propose.new.location.sphere <- function(lat,long,dist.std){
-	lat <- degrees2radians(lat)
+propose.new.location.sphere <- function(long,lat,dist.std){
 	long <- degrees2radians(long)
+	lat <- degrees2radians(lat)
 	proposed.jump <- abs(rnorm(1,0,dist.std))
 	jump.bearing <- runif(1,0,2*pi)
-	coords_prime <- sphere.hop(long,lat,proposed.jump,jump.bearing)
+	coords_prime <- sphere.hop(long=long, lat=lat, distance=proposed.jump, bearing=jump.bearing)
 	coords_prime <- radians2degrees(coords_prime)
 	return(coords_prime)
 }
@@ -1216,7 +1216,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				transformed.covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
 				badness.counter <- 0
 
-			while(Prob[1] == -Inf  && badness.counter < 100){
+			while(!is.finite(Prob[1]) && badness.counter < 100){
 					if(!is.null(initial.parameters$nugget)){
 						nugget[,1] <- initial.parameters$nugget
 					} else { nugget[,1] <- rexp(k) }
@@ -1582,6 +1582,7 @@ get.uprank.mean.centering.matrix <- function(focal.pop,k,mean.sample.sizes=NULL)
 calculate.fstat <- function(focal.population.observations,focal.pop.conditional.mean,admix.source.observations){
 	fstat <- ((focal.population.observations - focal.pop.conditional.mean) %*% admix.source.observations)#/length(focal.population.observations)
 	fstat <- fstat / sqrt(var(c(focal.population.observations - focal.pop.conditional.mean))*var(c(admix.source.observations)))
+	fstat <- fstat/length(focal.population.observations)
 	return(fstat)
 }
 
