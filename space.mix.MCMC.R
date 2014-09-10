@@ -1036,14 +1036,14 @@ update.lstp <- function(n,lstp,acceptance.fraction){
 	if(length(lstp) > 1){
 		for(i in 1:length(lstp)){
 			if(acceptance.fraction[i] > 0.44){
-				lstp[i] <- lstp[i] + min(0.01,n^(-0.5))
+				lstp[i] <- min(lstp[i] + min(0.01,n^(-0.5)),20)
 			} else if(acceptance.fraction[i] < 0.44){
 				lstp[i] <- lstp[i] - min(0.01,n^(-0.5))
 			}
 		}
 	} else {
 		if(acceptance.fraction > 0.44){
-			lstp <- lstp + min(0.01,n^(-0.5))
+			lstp <- min(lstp + min(0.01,n^(-0.5)),20)
 		} else if(acceptance.fraction < 0.44){
 			lstp <- lstp - min(0.01,n^(-0.5))
 		}
