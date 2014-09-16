@@ -1906,6 +1906,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 #															runif(2*k,min(spatial.prior.Y.coordinates),
 #																	max(spatial.prior.Y.coordinates)))
 			initial.parameters <- list("population.coordinates" = random.initial.population.coordinates)
+			tryCatch({
 				MCMC(model.option = fast.model.option,
 					data.type = data.type,
 					likelihood.option = fast.likelihood.option,
@@ -1935,14 +1936,22 @@ run.spacemix.analysis <- function(n.fast.reps,
 					prefix=paste(fast.run.dirs[i],"_",sep=""),
 					continue=FALSE,
 					continuing.params=NULL)
+			},error=function(e){
+							cat("fast run",i,"failed","\n")
+							file.rename(
+									paste("../",fast.run.dirs[i],sep=""),
+									paste("../","failed_",fast.run.dirs[i],sep=""))
+							})
 			setwd("..")
 		}
-		last.probs <- numeric(n.fast.reps)
+		last.probs <- c(rep(-Inf,n.fast.reps))
 		for(i in 1:n.fast.reps){
-			setwd(fast.run.dirs[i])
+			tryCatch({
+				setwd(fast.run.dirs[i])
 				prob.list <- query.MCMC.output(list.files()[grep("output",list.files())],param.names="Prob")
 					last.probs[i] <- prob.list$Prob[length(which(prob.list$Prob!=0))]
-			setwd("..")
+				setwd("..")
+				},error=function(e){cat("skipping",fast.run.dirs[i],"because it failed","\n")})
 		}
 		file.rename(fast.run.dirs[which.max(last.probs)],paste(fast.run.dirs[which.max(last.probs)],"_BestRun",sep=""))
 		setwd(list.files()[grep("BestRun",list.files())])
