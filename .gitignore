@@ -2,4 +2,4 @@
 *.log
 *.pdf
 *.synctex.gz
-DS*
+.DS*

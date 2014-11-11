@@ -331,7 +331,6 @@ Prior_prob_alphaD <- function(aD){
 	log(dexp(aD,rate=1))
 }
 
-
 Prior_prob_alpha2 <- function(a2){
 	log(dunif(a2,0.1,2))
 }
@@ -1096,7 +1095,7 @@ make.update.all.lstps.function <- function(model.option){
 
 initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,spacemix.data,population.coordinates,admix.proportions,a0,aD,a2,nugget,covariance,admixed.covariance,transformed.covariance,
 						k,LnL_freqs,prior_prob_alpha0,prior_prob_alphaD,prior_prob_alpha2,prior_prob_nugget,prior_prob_admix_proportions,prior_prob_admix_target_locations,prior_prob_admix_source_locations,
-						D,spatial.prior.X.coordinates,spatial.prior.Y.coordinates,target.spatial.prior.scale,source.spatial.prior.scale,centroid,gibbs.spatial.fineness,gibbs.nugget.fineness){
+						D,spatial.prior.X.coordinates,spatial.prior.Y.coordinates,target.spatial.prior.scale,source.spatial.prior.scale,centroid){
 	last.params <- list("sample.covariance" = spacemix.data$sample.covariance,
 						"projection.matrix" = spacemix.data$projection.matrix,						
 						"population.coordinates" = population.coordinates,
@@ -1122,9 +1121,6 @@ initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,
 						"target.spatial.prior.scale" = target.spatial.prior.scale,
 						"source.spatial.prior.scale" = source.spatial.prior.scale,
 						"centroid" = centroid,
-						"X.grid.fineness" = gibbs.spatial.fineness, 
-						"Y.grid.fineness" = gibbs.spatial.fineness, 
-						"nugget.grid.fineness" = gibbs.nugget.fineness,
 						"sd" = spacemix.data$sd,
 						"index.matrix" = spacemix.data$index.matrix,
 						"likelihood.option" = likelihood.option,
@@ -1157,9 +1153,6 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				printfreq,
 				samplefreq,
 				mixing.diagn.freq,
-				gibbs.nugget.fineness=50,
-				gibbs.spatial.fineness=50,
-				gibbs.step.frequency = 10000,
 				savefreq,
 				directory=NULL,
                 prefix="",
@@ -1283,7 +1276,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 											prior_prob_admix_target_locations = prior_prob_admix_target_locations,prior_prob_admix_source_locations = prior_prob_admix_source_locations,
 											D = distances[[1]],spatial.prior.X.coordinates = spatial.prior.X.coordinates,spatial.prior.Y.coordinates = spatial.prior.Y.coordinates,
 											target.spatial.prior.scale = target.spatial.prior.scale,source.spatial.prior.scale = source.spatial.prior.scale,
-											centroid = centroid,gibbs.spatial.fineness = gibbs.spatial.fineness,gibbs.nugget.fineness = gibbs.nugget.fineness)
+											centroid = centroid)
 		last.ngen <- 0
 	} else {
 		load(continuing.params)
@@ -1374,9 +1367,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 											spatial.prior.Y.coordinates = continuing.params$spatial.prior.Y.coordinates,
 											target.spatial.prior.scale = continuing.params$target.spatial.prior.scale,
 											source.spatial.prior.scale = continuing.params$source.spatial.prior.scale,
-											centroid = continuing.params$centroid,
-											gibbs.spatial.fineness = continuing.params$gibbs.spatial.fineness,
-											gibbs.nugget.fineness = continuing.params$gibbs.nugget.fineness)
+											centroid = continuing.params$centroid)
 		last.ngen <- continuing.params$last.ngen
 	}
 	
@@ -1391,9 +1382,6 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 	for(i in 2:ngen) {
 		x <- sample(c(1:length(Updates)),1)
 		new.params <- Updates[[x]](last.params)
-		if(i%%gibbs.step.frequency == 0){
-			new.params <- admix_target_location_and_nugget_gibbs_sampler(last.params)
-		}
 
 		if(i%%samplefreq == 0){
 			j <- i/samplefreq
@@ -1889,9 +1877,6 @@ run.spacemix.analysis <- function(n.fast.reps,
 									printfreq,
 									samplefreq,
 									mixing.diagn.freq,
-									gibbs.nugget.fineness,
-									gibbs.spatial.fineness,
-									gibbs.step.frequency,
 									savefreq,
 									directory=NULL,
 									prefix){
@@ -1928,9 +1913,6 @@ run.spacemix.analysis <- function(n.fast.reps,
 					printfreq = 1e3,
 					samplefreq = fast.MCMC.ngen/1e3,
 					mixing.diagn.freq = mixing.diagn.freq,
-					gibbs.nugget.fineness = gibbs.nugget.fineness,
-					gibbs.spatial.fineness = gibbs.spatial.fineness,
-					gibbs.step.frequency = gibbs.step.frequency,
 					savefreq = fast.MCMC.ngen/2,
 					directory = directory,
 					prefix=paste(fast.run.dirs[i],"_",sep=""),
@@ -1983,9 +1965,6 @@ run.spacemix.analysis <- function(n.fast.reps,
 				printfreq = printfreq,
 				samplefreq = samplefreq,
 				mixing.diagn.freq = mixing.diagn.freq,
-				gibbs.nugget.fineness = gibbs.nugget.fineness, 
-				gibbs.spatial.fineness = gibbs.spatial.fineness,
-				gibbs.step.frequency = gibbs.step.frequency,
 				savefreq = savefreq,
 				directory = directory,
                 prefix=prefix,
