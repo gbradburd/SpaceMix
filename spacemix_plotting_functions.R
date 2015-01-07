@@ -19,7 +19,7 @@ plot(Prob)
 #		spatial covariance function
 par(mfrow=c(1,3))
 	plot(a0)
-	plot(aD)
+	plot(a1)
 	plot(a2)
 
 #	plot trace plot for nugget parameters
@@ -38,7 +38,7 @@ matplot(t(admix.proportions),type='l')
 #		spatial covariance function
 par(mfrow=c(1,3))
 	plot(accept_rates$a0_accept_rate)
-	plot(accept_rates$aD_accept_rate)
+	plot(accept_rates$a1_accept_rate)
 	plot(accept_rates$a2_accept_rate)
 
 #	plot trace plot for nugget parameters

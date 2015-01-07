@@ -20,7 +20,7 @@ Update_admixture_target_location <- function(last.params){
 																						last.params$spatial.prior.Y.coordinates,
 																						last.params$target.spatial.prior.scale)
 		D_prime <- spacemix.dist(population.coordinates_prime[pop.to.update,1:2,drop=FALSE], population.coordinates_prime)
-		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
+		tmp.covariance_prime <- Covariance(last.params$a0,last.params$a1,last.params$a2,D_prime)
 		covariance_prime <- update.matrix(last.params$covariance,pop.to.update,tmp.covariance_prime)
 		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 				transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,
@@ -54,7 +54,7 @@ Update_admixture_source_location <- function(last.params){
 																					last.params$centroid,
 																					last.params$source.spatial.prior.scale)
 		D_prime <- spacemix.dist(population.coordinates_prime[ghost.to.update,1:2,drop=FALSE], population.coordinates_prime)
-		tmp.covariance_prime <- Covariance(last.params$a0,last.params$aD,last.params$a2,D_prime)
+		tmp.covariance_prime <- Covariance(last.params$a0,last.params$a1,last.params$a2,D_prime)
 		covariance_prime <- update.matrix(last.params$covariance,ghost.to.update,tmp.covariance_prime)
 		admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 			transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,
@@ -124,27 +124,27 @@ Update_a0 <- function(last.params){
 	return(new.params)
 }
 
-Update_aD <- function(last.params){
+Update_a1 <- function(last.params){
 	new.params <- last.params
-	aD_prime <- last.params$aD + rnorm(1,0,exp(last.params$lstps$aD_lstp))
-	prior_prob_alphaD_prime <- Prior_prob_alphaD(aD_prime)
-	if(prior_prob_alphaD_prime != -Inf){
-		covariance_prime <- Covariance(last.params$a0,aD_prime,last.params$a2,last.params$D)
+	a1_prime <- last.params$a1 + rnorm(1,0,exp(last.params$lstps$a1_lstp))
+	prior_prob_alpha1_prime <- Prior_prob_alpha1(a1_prime)
+	if(prior_prob_alpha1_prime != -Inf){
+		covariance_prime <- Covariance(last.params$a0,a1_prime,last.params$a2,last.params$D)
 			admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 			transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
-				if(metropolis_ratio(LnL_freqs_prime,prior_prob_alphaD_prime,last.params$LnL_freqs,last.params$prior_prob_alphaD)){
-					new.params$aD <- aD_prime
+				if(metropolis_ratio(LnL_freqs_prime,prior_prob_alpha1_prime,last.params$LnL_freqs,last.params$prior_prob_alpha1)){
+					new.params$a1 <- a1_prime
 					new.params$covariance <- covariance_prime
 					new.params$admixed.covariance <- admixed.covariance_prime
 					new.params$transformed.covariance <- transformed.covariance.prime					
-					new.params$prior_prob_alphaD <- prior_prob_alphaD_prime
+					new.params$prior_prob_alpha1 <- prior_prob_alpha1_prime
 					new.params$LnL_freqs <- LnL_freqs_prime
-					new.params$accept$aD_accept <- new.params$accept$aD_accept + 1
+					new.params$accept$a1_accept <- new.params$accept$a1_accept + 1
 				}
 	}
-	new.params$moves$aD_moves <- new.params$moves$aD_moves + 1
-	new.params$accept_rates$aD_accept_rate <- new.params$accept$aD_accept/new.params$moves$aD_moves
+	new.params$moves$a1_moves <- new.params$moves$a1_moves + 1
+	new.params$accept_rates$a1_accept_rate <- new.params$accept$a1_accept/new.params$moves$a1_moves
 	return(new.params)
 }
 
@@ -153,7 +153,7 @@ Update_a2 <- function(last.params){
 		a2_prime <- last.params$a2 + rnorm(1,0,exp(last.params$lstps$a2_lstp))
 		prior_prob_alpha2_prime <- Prior_prob_alpha2(a2_prime) 
 		if(prior_prob_alpha2_prime != -Inf) {
-			covariance_prime <- Covariance(last.params$a0,last.params$aD,a2_prime,last.params$D)
+			covariance_prime <- Covariance(last.params$a0,last.params$a1,a2_prime,last.params$D)
 				admixed.covariance_prime <- admixed.Covariance(covariance_prime,last.params$admix.proportions,last.params$nugget,last.params$k,last.params$inv.mean.sample.sizes,last.params$identity.matrix)
 				transformed.covariance.prime <- transformed.Covariance(admixed.covariance_prime,last.params$projection.matrix)
 				LnL_freqs_prime <- likelihood(likelihood.option = last.params$likelihood.option,sample.cov = last.params$sample.cov,par.cov = transformed.covariance.prime,index.matrix = last.params$index.matrix,sd = last.params$sd,n = last.params$loci)
@@ -223,8 +223,8 @@ Prior_prob_alpha0 <- function(a0){
 	# log(dgamma(a0,1,1))
 }
 
-Prior_prob_alphaD <- function(aD){
-	log(dexp(aD,rate=1))
+Prior_prob_alpha1 <- function(a1){
+	log(dexp(a1,rate=1))
 }
 
 Prior_prob_alpha2 <- function(a2){
@@ -246,7 +246,7 @@ normal.lnL <- function(sample.cov,par.cov,sd,index.matrix){
 }
 
 wishart.lnL <- function(sample.cov,par.cov,n){
-	par.cov <- par.cov/n
+	sample.cov <- n*sample.cov
 	A <- solve(par.cov)
 	lnL <- -0.5 * sum( A * sample.cov ) - (n/2)*determinant(par.cov,logarithm=TRUE)$modulus
 	return(lnL)
@@ -268,8 +268,8 @@ total_likelihood_freqs <- function(freqs,covmat,loci) {
 	return(-(1/2)*crossprod(as.vector(x))-loci*logsqrtdet)
 }
 	
-Covariance <- function(a0,aD,a2,GeoDist) {
-	covariance <- (1/a0)*exp(-(aD*GeoDist)^a2)
+Covariance <- function(a0,a1,a2,GeoDist) {
+	covariance <- (1/a0)*exp(-(a1*GeoDist)^a2)
 	return(covariance)
 }
 
@@ -578,8 +578,8 @@ initiate.population.coordinates <- function(spatial.prior.X.coordinates,spatial.
 	return(population.coordinates)
 }
 
-save.initial.parameters <- function(a0,aD,a2,nugget,admix.proportions,covariance,admixed.covariance,transformed.covariance,population.coordinates,D,projection.matrix,inv.mean.sample.sizes,prefix){
-	initial.parameters <- list("a0" = a0,"aD" = aD,"a2" = a2,"nugget" = nugget,"admix.proportions" = admix.proportions,
+save.initial.parameters <- function(a0,a1,a2,nugget,admix.proportions,covariance,admixed.covariance,transformed.covariance,population.coordinates,D,projection.matrix,inv.mean.sample.sizes,prefix){
+	initial.parameters <- list("a0" = a0,"a1" = a1,"a2" = a2,"nugget" = nugget,"admix.proportions" = admix.proportions,
 								"covariance" = covariance,"admixed.covariance" = admixed.covariance,"transformed.covariance" = transformed.covariance,
 								"population.coordinates" = population.coordinates,"D" = D,"projection.matrix" = projection.matrix,"inv.mean.sample.sizes"=inv.mean.sample.sizes)
 	save(initial.parameters,file=paste(prefix,"_Initial.parameters.Robj",sep=''))
@@ -588,13 +588,13 @@ save.initial.parameters <- function(a0,aD,a2,nugget,admix.proportions,covariance
 
 initiate.update.function.list <- function(model.option){
 	if(model.option == "no_movement"){
-		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget)
+		Updates <- list(Update_a0,Update_a1,Update_a2,Update_nugget)
 	} else if(model.option == "target"){
-		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget,Update_admixture_target_location)
+		Updates <- list(Update_a0,Update_a1,Update_a2,Update_nugget,Update_admixture_target_location)
 	} else if(model.option == "source"){
-		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget,Update_admixture_source_location,Update_admixture_proportions)
+		Updates <- list(Update_a0,Update_a1,Update_a2,Update_nugget,Update_admixture_source_location,Update_admixture_proportions)
 	} else if(model.option == "source_and_target"){
-		Updates <- list(Update_a0,Update_aD,Update_a2,Update_nugget,Update_admixture_target_location,Update_admixture_source_location,Update_admixture_proportions)
+		Updates <- list(Update_a0,Update_a1,Update_a2,Update_nugget,Update_admixture_target_location,Update_admixture_source_location,Update_admixture_proportions)
 	}
 	return(Updates)
 }
@@ -603,25 +603,25 @@ initiate.lstps.list <- function(model.option,k,ngen,samplefreq,for.last.params){
 	if(!for.last.params){
 		if(model.option == "no_movement"){
 			lstps <- list("a0_lstp" = numeric(ngen/samplefreq),
-							"aD_lstp" = numeric(ngen/samplefreq),
+							"a1_lstp" = numeric(ngen/samplefreq),
 							"a2_lstp" = numeric(ngen/samplefreq),
 							"nugget_lstp" = matrix(0,nrow=k,ncol=(ngen/samplefreq)))
 		} else if(model.option == "target"){
 			lstps <- list("a0_lstp" = numeric(ngen/samplefreq),
-							"aD_lstp" = numeric(ngen/samplefreq),
+							"a1_lstp" = numeric(ngen/samplefreq),
 							"a2_lstp" = numeric(ngen/samplefreq),
 							"nugget_lstp" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
 							"admix_target_location_lstp" = matrix(0,nrow=k,ncol=(ngen/samplefreq)))
 		} else if(model.option == "source"){
 			lstps <- list("a0_lstp" = numeric(ngen/samplefreq),
-							"aD_lstp" = numeric(ngen/samplefreq),
+							"a1_lstp" = numeric(ngen/samplefreq),
 							"a2_lstp" = numeric(ngen/samplefreq),
 							"nugget_lstp" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
 							"admix_source_location_lstp" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
 							"admix_proportions_lstp" = matrix(0,nrow=k,ncol=(ngen/samplefreq)))
 		} else if(model.option == "source_and_target"){
 			lstps <- list("a0_lstp" = numeric(ngen/samplefreq),
-							"aD_lstp" = numeric(ngen/samplefreq),
+							"a1_lstp" = numeric(ngen/samplefreq),
 							"a2_lstp" = numeric(ngen/samplefreq),
 							"nugget_lstp" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
 							"admix_target_location_lstp" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
@@ -631,25 +631,25 @@ initiate.lstps.list <- function(model.option,k,ngen,samplefreq,for.last.params){
 	} else {
 		if(model.option == "no_movement"){
 			lstps <- list("a0_lstp" = 0,
-							"aD_lstp" = 0,
+							"a1_lstp" = 0,
 							"a2_lstp" = 0,
 							"nugget_lstp" = numeric(k))
 		} else if(model.option == "target"){
 			lstps <- list("a0_lstp" = 0,
-							"aD_lstp" = 0,
+							"a1_lstp" = 0,
 							"a2_lstp" = 0,
 							"nugget_lstp" = numeric(k),
 							"admix_target_location_lstp" = numeric(k))
 		} else if(model.option == "source"){
 			lstps <- list("a0_lstp" = 0,
-							"aD_lstp" = 0,
+							"a1_lstp" = 0,
 							"a2_lstp" = 0,
 							"nugget_lstp" = numeric(k),
 							"admix_source_location_lstp" = numeric(k),
 							"admix_proportions_lstp" = numeric(k))
 		} else if(model.option == "source_and_target"){
 			lstps <- list("a0_lstp" = 0,
-							"aD_lstp" = 0,
+							"a1_lstp" = 0,
 							"a2_lstp" = 0,
 							"nugget_lstp" = numeric(k),
 							"admix_target_location_lstp" = numeric(k),
@@ -663,25 +663,25 @@ initiate.lstps.list <- function(model.option,k,ngen,samplefreq,for.last.params){
 initiate.diagns.list <- function(model.option,k,mixing.diagn.freq){
 	if(model.option == "no_movement"){
 		diagns <- list("a0_diagn" = numeric(mixing.diagn.freq),
-						"aD_diagn" = numeric(mixing.diagn.freq),
+						"a1_diagn" = numeric(mixing.diagn.freq),
 						"a2_diagn" = numeric(mixing.diagn.freq),
 						"nugget_diagn" = matrix(0,nrow=k,ncol=mixing.diagn.freq))
 	} else if(model.option == "target"){
 		diagns <- list("a0_diagn" = numeric(mixing.diagn.freq),
-						"aD_diagn" = numeric(mixing.diagn.freq),
+						"a1_diagn" = numeric(mixing.diagn.freq),
 						"a2_diagn" = numeric(mixing.diagn.freq),
 						"nugget_diagn" = matrix(0,nrow=k,ncol=(mixing.diagn.freq)),
 						"admix_target_location_diagn" = matrix(0,nrow=k,ncol=mixing.diagn.freq))
 	} else if(model.option == "source"){
 		diagns <- list("a0_diagn" = numeric(mixing.diagn.freq),
-						"aD_diagn" = numeric(mixing.diagn.freq),
+						"a1_diagn" = numeric(mixing.diagn.freq),
 						"a2_diagn" = numeric(mixing.diagn.freq),
 						"nugget_diagn" = matrix(0,nrow=k,ncol=mixing.diagn.freq),
 						"admix_source_location_diagn" = matrix(0,nrow=k,ncol=mixing.diagn.freq),
 						"admix_proportions_diagn" = matrix(0,nrow=k,ncol=mixing.diagn.freq))
 	} else if(model.option == "source_and_target"){
 		diagns <- list("a0_diagn" = numeric(mixing.diagn.freq),
-						"aD_diagn" = numeric(mixing.diagn.freq),
+						"a1_diagn" = numeric(mixing.diagn.freq),
 						"a2_diagn" = numeric(mixing.diagn.freq),
 						"nugget_diagn" = matrix(0,nrow=k,ncol=mixing.diagn.freq),
 						"admix_target_location_diagn" = matrix(0,nrow=k,ncol=mixing.diagn.freq),
@@ -694,25 +694,25 @@ initiate.diagns.list <- function(model.option,k,mixing.diagn.freq){
 initiate.moves.list <- function(model.option,k){
 	if(model.option == "no_movement"){
 		moves <- list("a0_moves" = 0,
-						"aD_moves" = 0,
+						"a1_moves" = 0,
 						"a2_moves" = 0,
 						"nugget_moves" = numeric(k))
 	} else if(model.option == "target"){
 		moves <- list("a0_moves" = 0,
-						"aD_moves" = 0,
+						"a1_moves" = 0,
 						"a2_moves" = 0,
 						"nugget_moves" = numeric(k),
 						"admix_target_location_moves" = numeric(k))
 	} else if(model.option == "source"){
 		moves <- list("a0_moves" = 0,
-						"aD_moves" = 0,
+						"a1_moves" = 0,
 						"a2_moves" = 0,
 						"nugget_moves" = numeric(k),
 						"admix_source_location_moves" = numeric(k),
 						"admix_proportions_moves" = numeric(k))
 	} else if(model.option == "source_and_target"){
 		moves <- list("a0_moves" = 0,
-						"aD_moves" = 0,
+						"a1_moves" = 0,
 						"a2_moves" = 0,
 						"nugget_moves" = numeric(k),
 						"admix_target_location_moves" = numeric(k),
@@ -725,25 +725,25 @@ initiate.moves.list <- function(model.option,k){
 initiate.accept.list <- function(model.option,k){
 	if(model.option == "no_movement"){
 		accept <- list("a0_accept" = 0,
-						"aD_accept" = 0,
+						"a1_accept" = 0,
 						"a2_accept" = 0,
 						"nugget_accept" = numeric(k))
 	} else if(model.option == "target"){
 		accept <- list("a0_accept" = 0,
-						"aD_accept" = 0,
+						"a1_accept" = 0,
 						"a2_accept" = 0,
 						"nugget_accept" = numeric(k),
 						"admix_target_location_accept" = numeric(k))
 	} else if(model.option == "source"){
 		accept <- list("a0_accept" = 0,
-						"aD_accept" = 0,
+						"a1_accept" = 0,
 						"a2_accept" = 0,
 						"nugget_accept" = numeric(k),
 						"admix_source_location_accept" = numeric(k),
 						"admix_proportions_accept" = numeric(k))
 	} else if(model.option == "source_and_target"){
 		accept <- list("a0_accept" = 0,
-						"aD_accept" = 0,
+						"a1_accept" = 0,
 						"a2_accept" = 0,
 						"nugget_accept" = numeric(k),
 						"admix_target_location_accept" = numeric(k),
@@ -757,25 +757,25 @@ initiate.accept.rates.list <- function(model.option,k,ngen,samplefreq,for.last.p
 	if(!for.last.params){
 		if(model.option == "no_movement"){
 			accept_rates <- list("a0_accept_rate" = numeric(ngen/samplefreq),
-							"aD_accept_rate" = numeric(ngen/samplefreq),
+							"a1_accept_rate" = numeric(ngen/samplefreq),
 							"a2_accept_rate" = numeric(ngen/samplefreq),
 							"nugget_accept_rate" = matrix(0,nrow=k,ncol=(ngen/samplefreq)))
 		} else if(model.option == "target"){
 			accept_rates <- list("a0_accept_rate" = numeric(ngen/samplefreq),
-							"aD_accept_rate" = numeric(ngen/samplefreq),
+							"a1_accept_rate" = numeric(ngen/samplefreq),
 							"a2_accept_rate" = numeric(ngen/samplefreq),
 							"nugget_accept_rate" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
 							"admix_target_location_accept_rate" = matrix(0,nrow=k,ncol=(ngen/samplefreq)))
 		} else if(model.option == "source"){
 			accept_rates <- list("a0_accept_rate" = numeric(ngen/samplefreq),
-							"aD_accept_rate" = numeric(ngen/samplefreq),
+							"a1_accept_rate" = numeric(ngen/samplefreq),
 							"a2_accept_rate" = numeric(ngen/samplefreq),
 							"nugget_accept_rate" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
 							"admix_source_location_accept_rate" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
 							"admix_proportions_accept_rate" = matrix(0,nrow=k,ncol=(ngen/samplefreq)))
 		} else if(model.option == "source_and_target"){
 			accept_rates <- list("a0_accept_rate" = numeric(ngen/samplefreq),
-							"aD_accept_rate" = numeric(ngen/samplefreq),
+							"a1_accept_rate" = numeric(ngen/samplefreq),
 							"a2_accept_rate" = numeric(ngen/samplefreq),
 							"nugget_accept_rate" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
 							"admix_target_location_accept_rate" = matrix(0,nrow=k,ncol=(ngen/samplefreq)),
@@ -785,25 +785,25 @@ initiate.accept.rates.list <- function(model.option,k,ngen,samplefreq,for.last.p
 	} else {
 		if(model.option == "no_movement"){
 			accept_rates <- list("a0_accept_rate" = 0,
-							"aD_accept_rate" = 0,
+							"a1_accept_rate" = 0,
 							"a2_accept_rate" = 0,
 							"nugget_accept_rate" = numeric(k))
 		} else if(model.option == "target"){
 			accept_rates <- list("a0_accept_rate" = 0,
-							"aD_accept_rate" = 0,
+							"a1_accept_rate" = 0,
 							"a2_accept_rate" = 0,
 							"nugget_accept_rate" = numeric(k),
 							"admix_target_location_accept_rate" = numeric(k))
 		} else if(model.option == "source"){
 			accept_rates <- list("a0_accept_rate" = 0,
-							"aD_accept_rate" = 0,
+							"a1_accept_rate" = 0,
 							"a2_accept_rate" = 0,
 							"nugget_accept_rate" = numeric(k),
 							"admix_source_location_accept_rate" = numeric(k),
 							"admix_proportions_accept_rate" = numeric(k))
 		} else if(model.option == "source_and_target"){
 			accept_rates <- list("a0_accept_rate" = 0,
-							"aD_accept_rate" = 0,
+							"a1_accept_rate" = 0,
 							"a2_accept_rate" = 0,
 							"nugget_accept_rate" = numeric(k),
 							"admix_target_location_accept_rate" = numeric(k),
@@ -814,8 +814,8 @@ initiate.accept.rates.list <- function(model.option,k,ngen,samplefreq,for.last.p
 	return(accept_rates)
 }
 
-print.mcmc.update <- function(LnL_freqs,prior_prob_admix_proportions,prior_prob_nugget,prior_prob_alpha0,prior_prob_alphaD,prior_prob_alpha2,prior_prob_admix_target_locations,prior_prob_admix_source_locations){
-	P <- LnL_freqs + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alphaD + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
+print.mcmc.update <- function(LnL_freqs,prior_prob_admix_proportions,prior_prob_nugget,prior_prob_alpha0,prior_prob_alpha1,prior_prob_alpha2,prior_prob_admix_target_locations,prior_prob_admix_source_locations){
+	P <- LnL_freqs + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alpha1 + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
 	return(P)
 }
 
@@ -823,7 +823,7 @@ make.update.sampled.accept.rates.function <- function(model.option){
 	if(model.option == "no_movement"){
 		update.sampled.accept.rates <<- function(accept_rates,j,new.params){
 			accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
-			accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
+			accept_rates$a1_accept_rate[j] <- new.params$accept_rates$a1_accept_rate
 			accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
 			accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
 			return(accept_rates)
@@ -831,7 +831,7 @@ make.update.sampled.accept.rates.function <- function(model.option){
 	} else if(model.option == "target"){
 		update.sampled.accept.rates <<- function(accept_rates,j,new.params){
 			accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
-			accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
+			accept_rates$a1_accept_rate[j] <- new.params$accept_rates$a1_accept_rate
 			accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
 			accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
 			accept_rates$admix_target_location_accept_rate[,j] <- new.params$accept_rates$admix_target_location_accept_rate
@@ -840,7 +840,7 @@ make.update.sampled.accept.rates.function <- function(model.option){
 	} else if(model.option == "source"){
 		update.sampled.accept.rates <<- function(accept_rates,j,new.params){
 			accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
-			accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
+			accept_rates$a1_accept_rate[j] <- new.params$accept_rates$a1_accept_rate
 			accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
 			accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
 			accept_rates$admix_source_location_accept_rate[,j] <- new.params$accept_rates$admix_source_location_accept_rate
@@ -850,7 +850,7 @@ make.update.sampled.accept.rates.function <- function(model.option){
 	} else if(model.option == "source_and_target"){
 		update.sampled.accept.rates <<- function(accept_rates,j,new.params){
 			accept_rates$a0_accept_rate[j] <- new.params$accept_rates$a0_accept_rate
-			accept_rates$aD_accept_rate[j] <- new.params$accept_rates$aD_accept_rate
+			accept_rates$a1_accept_rate[j] <- new.params$accept_rates$a1_accept_rate
 			accept_rates$a2_accept_rate[j] <- new.params$accept_rates$a2_accept_rate
 			accept_rates$nugget_accept_rate[,j] <- new.params$accept_rates$nugget_accept_rate
 			accept_rates$admix_target_location_accept_rate[,j] <- new.params$accept_rates$admix_target_location_accept_rate
@@ -866,7 +866,7 @@ make.update.sampled.lstps.function <- function(model.option){
 	if(model.option == "no_movement"){
 		update.sampled.lstps <<- function(lstps,j,new.params){
 			lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
-			lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
+			lstps$a1_lstp[j] <- new.params$lstps$a1_lstp
 			lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
 			lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
 			return(lstps)
@@ -874,7 +874,7 @@ make.update.sampled.lstps.function <- function(model.option){
 	} else if(model.option == "target"){
 		update.sampled.lstps <<- function(lstps,j,new.params){
 			lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
-			lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
+			lstps$a1_lstp[j] <- new.params$lstps$a1_lstp
 			lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
 			lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
 			lstps$admix_target_location_lstp[,j] <- new.params$lstps$admix_target_location_lstp
@@ -883,7 +883,7 @@ make.update.sampled.lstps.function <- function(model.option){
 	} else if(model.option == "source"){
 		update.sampled.lstps <<- function(lstps,j,new.params){
 			lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
-			lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
+			lstps$a1_lstp[j] <- new.params$lstps$a1_lstp
 			lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
 			lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
 			lstps$admix_source_location_lstp[,j] <- new.params$lstps$admix_source_location_lstp
@@ -893,7 +893,7 @@ make.update.sampled.lstps.function <- function(model.option){
 	} else if(model.option == "source_and_target"){
 		update.sampled.lstps <<- function(lstps,j,new.params){
 			lstps$a0_lstp[j] <- new.params$lstps$a0_lstp
-			lstps$aD_lstp[j] <- new.params$lstps$aD_lstp
+			lstps$a1_lstp[j] <- new.params$lstps$a1_lstp
 			lstps$a2_lstp[j] <- new.params$lstps$a2_lstp
 			lstps$nugget_lstp[,j] <- new.params$lstps$nugget_lstp
 			lstps$admix_target_location_lstp[,j] <- new.params$lstps$admix_target_location_lstp
@@ -918,7 +918,7 @@ make.update.diagns.function <- function(model.option){
 		update.diagns <<- function(diagns,generation,mixing.diagn.freq,accept_rates){
 			diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
 				diagns$a0_diagn[diagn.step] <- accept_rates$a0_accept_rate
-				diagns$aD_diagn[diagn.step] <- accept_rates$aD_accept_rate
+				diagns$a1_diagn[diagn.step] <- accept_rates$a1_accept_rate
 				diagns$a2_diagn[diagn.step] <- accept_rates$a2_accept_rate
 				diagns$nugget_diagn[,diagn.step] <- accept_rates$nugget_accept_rate
 			return(diagns)
@@ -927,7 +927,7 @@ make.update.diagns.function <- function(model.option){
 		update.diagns <<- function(diagns,generation,mixing.diagn.freq,accept_rates){
 			diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
 				diagns$a0_diagn[diagn.step] <- accept_rates$a0_accept_rate
-				diagns$aD_diagn[diagn.step] <- accept_rates$aD_accept_rate
+				diagns$a1_diagn[diagn.step] <- accept_rates$a1_accept_rate
 				diagns$a2_diagn[diagn.step] <- accept_rates$a2_accept_rate
 				diagns$nugget_diagn[,diagn.step] <- accept_rates$nugget_accept_rate
 				diagns$admix_target_location_diagn[,diagn.step] <- accept_rates$admix_target_location_accept_rate
@@ -937,7 +937,7 @@ make.update.diagns.function <- function(model.option){
 		update.diagns <<- function(diagns,generation,mixing.diagn.freq,accept_rates){
 			diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
 				diagns$a0_diagn[diagn.step] <- accept_rates$a0_accept_rate
-				diagns$aD_diagn[diagn.step] <- accept_rates$aD_accept_rate
+				diagns$a1_diagn[diagn.step] <- accept_rates$a1_accept_rate
 				diagns$a2_diagn[diagn.step] <- accept_rates$a2_accept_rate
 				diagns$nugget_diagn[,diagn.step] <- accept_rates$nugget_accept_rate
 				diagns$admix_source_location_diagn[,diagn.step] <- accept_rates$admix_source_location_accept_rate
@@ -948,7 +948,7 @@ make.update.diagns.function <- function(model.option){
 		update.diagns <<- function(diagns,generation,mixing.diagn.freq,accept_rates){
 			diagn.step <- get.diagn.step(generation,mixing.diagn.freq)
 				diagns$a0_diagn[diagn.step] <- accept_rates$a0_accept_rate
-				diagns$aD_diagn[diagn.step] <- accept_rates$aD_accept_rate
+				diagns$a1_diagn[diagn.step] <- accept_rates$a1_accept_rate
 				diagns$a2_diagn[diagn.step] <- accept_rates$a2_accept_rate
 				diagns$nugget_diagn[,diagn.step] <- accept_rates$nugget_accept_rate
 				diagns$admix_target_location_diagn[,diagn.step] <- accept_rates$admix_target_location_accept_rate
@@ -983,7 +983,7 @@ make.update.all.lstps.function <- function(model.option){
 	if(model.option == "no_movement"){
 		update.all.lstps <<- function(lstps,n,diagns){
 			lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
-			lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
+			lstps$a1_lstp <- update.lstp(n,lstps$a1_lstp,mean(diagns$a1_diagn))
 			lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
 			lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
 			return(lstps)
@@ -991,7 +991,7 @@ make.update.all.lstps.function <- function(model.option){
 	} else if(model.option == "target"){
 		update.all.lstps <<- function(lstps,n,diagns){
 			lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
-			lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
+			lstps$a1_lstp <- update.lstp(n,lstps$a1_lstp,mean(diagns$a1_diagn))
 			lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
 			lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
 			lstps$admix_target_location_lstp <- update.lstp(n,lstps$admix_target_location_lstp,rowMeans(diagns$admix_target_location_diagn))
@@ -1000,7 +1000,7 @@ make.update.all.lstps.function <- function(model.option){
 	} else if(model.option == "source"){
 		update.all.lstps <<- function(lstps,n,diagns){
 			lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
-			lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
+			lstps$a1_lstp <- update.lstp(n,lstps$a1_lstp,mean(diagns$a1_diagn))
 			lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
 			lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
 			lstps$admix_source_location_lstp <- update.lstp(n,lstps$admix_source_location_lstp,rowMeans(diagns$admix_source_location_diagn))
@@ -1010,7 +1010,7 @@ make.update.all.lstps.function <- function(model.option){
 	} else if(model.option == "source_and_target"){
 		update.all.lstps <<- function(lstps,n,diagns){
 			lstps$a0_lstp <- update.lstp(n,lstps$a0_lstp,mean(diagns$a0_diagn))
-			lstps$aD_lstp <- update.lstp(n,lstps$aD_lstp,mean(diagns$aD_diagn))
+			lstps$a1_lstp <- update.lstp(n,lstps$a1_lstp,mean(diagns$a1_diagn))
 			lstps$a2_lstp <- update.lstp(n,lstps$a2_lstp,mean(diagns$a2_diagn))
 			lstps$nugget_lstp <- update.lstp(n,lstps$nugget_lstp,rowMeans(diagns$nugget_diagn))
 			lstps$admix_target_location_lstp <- update.lstp(n,lstps$admix_target_location_lstp,rowMeans(diagns$admix_target_location_diagn))
@@ -1022,20 +1022,20 @@ make.update.all.lstps.function <- function(model.option){
 	return(0)
 }
 
-initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,spacemix.data,population.coordinates,admix.proportions,a0,aD,a2,nugget,covariance,admixed.covariance,transformed.covariance,
-						k,LnL_freqs,prior_prob_alpha0,prior_prob_alphaD,prior_prob_alpha2,prior_prob_nugget,prior_prob_admix_proportions,prior_prob_admix_target_locations,prior_prob_admix_source_locations,
+initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,spacemix.data,population.coordinates,admix.proportions,a0,a1,a2,nugget,covariance,admixed.covariance,transformed.covariance,
+						k,LnL_freqs,prior_prob_alpha0,prior_prob_alpha1,prior_prob_alpha2,prior_prob_nugget,prior_prob_admix_proportions,prior_prob_admix_target_locations,prior_prob_admix_source_locations,
 						D,spatial.prior.X.coordinates,spatial.prior.Y.coordinates,target.spatial.prior.scale,source.spatial.prior.scale,centroid){
 	last.params <- list("sample.covariance" = spacemix.data$sample.covariance,
 						"projection.matrix" = spacemix.data$projection.matrix,						
 						"population.coordinates" = population.coordinates,
 						"admix.proportions" = admix.proportions,
-						"a0" = a0,"aD" = aD,"a2" = a2,"nugget" = nugget,
+						"a0" = a0,"a1" = a1,"a2" = a2,"nugget" = nugget,
 						"covariance" = covariance,"admixed.covariance" = admixed.covariance,
 						"transformed.covariance" = transformed.covariance,
 						"lstps" = initiate.lstps.list(model.option,k,ngen,samplefreq,for.last.params=TRUE),
 						"k" = k,"LnL_freqs" = LnL_freqs,
 						"prior_prob_alpha0" = prior_prob_alpha0,
-						"prior_prob_alphaD" = prior_prob_alphaD,
+						"prior_prob_alpha1" = prior_prob_alpha1,
 						"prior_prob_alpha2" = prior_prob_alpha2,
 						"prior_prob_nugget" = prior_prob_nugget,
 						"prior_prob_admix_proportions" = prior_prob_admix_proportions, 
@@ -1074,7 +1074,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				source.spatial.prior.scale = NULL,
 				spatial.prior.X.coordinates,
 				spatial.prior.Y.coordinates,
-				initial.parameters = NULL,		#a0,aD,a2,population.coordinates,admix.proportions
+				initial.parameters = NULL,		#a0,a1,a2,population.coordinates,admix.proportions
 				round.earth,
 				k,
 				loci,
@@ -1120,7 +1120,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		admix.proportions <- matrix(0,nrow=k,ncol=ngen/samplefreq)
 		nugget <- matrix(0,nrow=k,ncol=ngen/samplefreq)
 		a0 <- numeric(ngen/samplefreq)
-		aD <- numeric(ngen/samplefreq)
+		a1 <- numeric(ngen/samplefreq)
 		a2 <- numeric(ngen/samplefreq)
 		accept_rates <- initiate.accept.rates.list(model.option,k,ngen,samplefreq,for.last.params=FALSE)
 		lstps <- initiate.lstps.list(model.option,k,ngen,samplefreq,for.last.params=FALSE)
@@ -1145,9 +1145,9 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 					if(!is.null(initial.parameters$a0)){
 						a0[1] <- initial.parameters$a0
 					} else { a0[1] <- rexp(1,1/100) }
-					if(!is.null(initial.parameters$aD)){
-						aD[1] <- initial.parameters$aD
-					} else { aD[1] <- rexp(1,1) }
+					if(!is.null(initial.parameters$a1)){
+						a1[1] <- initial.parameters$a1
+					} else { a1[1] <- rexp(1,1) }
 					if(!is.null(initial.parameters$a2)){
 						a2[1] <- initial.parameters$a2
 					} else { a2[1] <- runif(1,0.1,2) }
@@ -1168,16 +1168,16 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 					if(is.null(source.spatial.prior.scale)){
 						source.spatial.prior.scale <- mean(spacemix.dist(cbind(spatial.prior.X.coordinates,spatial.prior.Y.coordinates))) * 2
 					}
-					covariance <- Covariance(a0[1],aD[1],a2[1],distances[[1]])
+					covariance <- Covariance(a0[1],a1[1],a2[1],distances[[1]])
 					admixed.covariance <- admixed.Covariance(covariance,admix.proportions[,1],nugget[,1],k,spacemix.data$inv.mean.sample.sizes,diag(k))
 					transformed.covariance <- transformed.Covariance(admixed.covariance,spacemix.data$projection.matrix)
-					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],covariance,admixed.covariance,transformed.covariance,population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
+					tmp <- save.initial.parameters(a0[1],a1[1],a2[1],nugget[,1],admix.proportions[,1],covariance,admixed.covariance,transformed.covariance,population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
 				LnL_freqs[1] <- likelihood(likelihood.option,spacemix.data$sample.covariance, transformed.covariance,spacemix.data$index.matrix,spacemix.data$sd,spacemix.data$loci)
 					cat("LnL: ",LnL_freqs[1],"\n")
 				prior_prob_alpha0 <- Prior_prob_alpha0(a0[1])
 					cat("Pr(a0): ",prior_prob_alpha0,"\n")
-				prior_prob_alphaD <- Prior_prob_alphaD(aD[1])
-					cat("Pr(aD): ",prior_prob_alphaD,"\n")
+				prior_prob_alpha1 <- Prior_prob_alpha1(a1[1])
+					cat("Pr(a1): ",prior_prob_alpha1,"\n")
 				prior_prob_alpha2 <- Prior_prob_alpha2(a2[1])
 					cat("Pr(a2): ",prior_prob_alpha2,"\n")
 				prior_prob_nugget <- Prior_prob_nugget(nugget[,1])
@@ -1187,7 +1187,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				prior_prob_admix_source_locations <- Prior_prob_admix_source_locations(population.coordinates[[1]][(k+1):(2*k),],centroid,source.spatial.prior.scale)
 					cat("Pr(admix_source_locations): ",prior_prob_admix_source_locations,"\n")
 					cat("Pr(admix_proportions): ",prior_prob_admix_proportions,"\n")
-				Prob[1] <- LnL_freqs[1] + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alphaD + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
+				Prob[1] <- LnL_freqs[1] + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alpha1 + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
 				cat("Prob: ",Prob[1],"\n")
 			badness.counter <- badness.counter + 1
 			if(badness.counter > 99){
@@ -1199,8 +1199,8 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 			}
 		}	
 		last.params <- initiate.last.params(model.option = model.option,likelihood.option = likelihood.option,samplefreq = samplefreq,ngen = ngen,spacemix.data = spacemix.data,population.coordinates = population.coordinates[[1]],admix.proportions = admix.proportions[,1],
-											a0[1],aD[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed.covariance,k = k,LnL_freqs = LnL_freqs[1],
-											prior_prob_alpha0 = prior_prob_alpha0,prior_prob_alphaD = prior_prob_alphaD,prior_prob_alpha2 = prior_prob_alpha2,
+											a0[1],a1[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed.covariance,k = k,LnL_freqs = LnL_freqs[1],
+											prior_prob_alpha0 = prior_prob_alpha0,prior_prob_alpha1 = prior_prob_alpha1,prior_prob_alpha2 = prior_prob_alpha2,
 											prior_prob_nugget = prior_prob_nugget,prior_prob_admix_proportions = prior_prob_admix_proportions,
 											prior_prob_admix_target_locations = prior_prob_admix_target_locations,prior_prob_admix_source_locations = prior_prob_admix_source_locations,
 											D = distances[[1]],spatial.prior.X.coordinates = spatial.prior.X.coordinates,spatial.prior.Y.coordinates = spatial.prior.Y.coordinates,
@@ -1211,7 +1211,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		load(continuing.params)
 		#FIX w/r/t diagn,lstp,accept_rate,moves,accept
 		a0_diagn <- continuing.params$a0_diagn
-		aD_diagn <- continuing.params$aD_diagn
+		a1_diagn <- continuing.params$a1_diagn
 		a2_diagn <- continuing.params$a2_diagn
 		nugget_diagn <- continuing.params$nugget_diagn
 		admix_target_location_diagn <- continuing.params$admix_target_location_diagn
@@ -1219,7 +1219,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		admix_proportions_diagn <- continuing.params$admix_proportions_diagn
 		nugget[,1] <- continuing.params$nugget
 		a0[1] <- continuing.params$a0
-		aD[1] <- continuing.params$aD
+		a1[1] <- continuing.params$a1
 		a2[1] <- continuing.params$a2
 		population.coordinates[[1]] <- 	continuing.params$population.coordinates
 		admix.proportions[,1] <- continuing.params$admix.proportions
@@ -1231,15 +1231,15 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 					covariance <- continuing.params$covariance
 					admixed.covariance <- continuing.params$admixed.covariance
 					transformed.covariance <- continuing.params$transformed.covariance
-					tmp <- save.initial.parameters(a0[1],aD[1],a2[1],nugget[,1],admix.proportions[,1],
+					tmp <- save.initial.parameters(a0[1],a1[1],a2[1],nugget[,1],admix.proportions[,1],
 													covariance,admixed.covariance,transformed.covariance,
 													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
 				LnL_freqs[1] <- continuing.params$LnL_freqs
 					cat("LnL: ",LnL_freqs[1],"\n")
 				prior_prob_alpha0 <- continuing.params$prior_prob_alpha0
 					cat("Pr(a0): ",prior_prob_alpha0,"\n")
-				prior_prob_alphaD <- continuing.params$prior_prob_alphaD
-					cat("Pr(aD): ",prior_prob_alphaD,"\n")
+				prior_prob_alpha1 <- continuing.params$prior_prob_alpha1
+					cat("Pr(a1): ",prior_prob_alpha1,"\n")
 				prior_prob_alpha2 <- continuing.params$prior_prob_alpha2
 					cat("Pr(a2): ",prior_prob_alpha2,"\n")
 				prior_prob_nugget <- continuing.params$prior_prob_nugget
@@ -1249,43 +1249,43 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				prior_prob_admix_source_locations <- continuing.params$prior_prob_admix_source_locations
 					cat("Pr(admix_source_locations): ",prior_prob_admix_source_locations,"\n")
 					cat("Pr(admix_proportions): ",prior_prob_admix_proportions,"\n")
-				Prob[1] <- LnL_freqs[1] + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alphaD + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
+				Prob[1] <- LnL_freqs[1] + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alpha1 + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
 				cat("Prob: ",Prob[1],"\n")
 		last.params <- initiate.last.params(spacemix.data = spacemix.data,
 											population.coordinates = population.coordinates[[1]],
 											admix.proportions = admix.proportions[,1],
-											a0[1],aD[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed.covariance,
+											a0[1],a1[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed.covariance,
 											admix.proportions.lstp = continuing.params$admix.proportions.lstp,
 											admix.target.location.lstp = continuing.params$admix.target.location.lstp,
 											admix.source.location.lstp = continuing.params$admix.source.location.lstp,
 											nugget.lstp = continuing.params$nugget.lstp,
 											a0.lstp = continuing.params$a0.lstp,
-											aD.lstp = continuing.params$aD.lstp,
+											a1.lstp = continuing.params$a1.lstp,
 											a2.lstp = continuing.params$a2.lstp,
 											k = k,LnL_freqs = LnL_freqs[1],
 											prior_prob_alpha0 = prior_prob_alpha0,
-											prior_prob_alphaD = prior_prob_alphaD,
+											prior_prob_alpha1 = prior_prob_alpha1,
 											prior_prob_alpha2 = prior_prob_alpha2,
 											prior_prob_nugget = prior_prob_nugget,
 											prior_prob_admix_proportions = prior_prob_admix_proportions,
 											prior_prob_admix_target_locations = prior_prob_admix_target_locations,
 											prior_prob_admix_source_locations = prior_prob_admix_source_locations,
 											a0_accept_rate = continuing.params$a0_accept_rate,
-											aD_accept_rate = continuing.params$aD_accept_rate,
+											a1_accept_rate = continuing.params$a1_accept_rate,
 											a2_accept_rate = continuing.params$a2_accept_rate,
 											nugget_accept_rate = continuing.params$nugget_accept_rate,
 											admix_source_location_accept_rate = continuing.params$admix_source_location_accept_rate,
 											admix_proportions_accept_rate = continuing.params$admix_proportions_accept_rate,
 											admix_target_location_accept_rate = continuing.params$admix_target_location_accept_rate,
 											a0_moves = continuing.params$a0_moves,
-											aD_moves = continuing.params$aD_moves,
+											a1_moves = continuing.params$a1_moves,
 											a2_moves = continuing.params$a2_moves,
 											nugget_moves = continuing.params$nugget_moves,
 											admix_source_location_moves = continuing.params$admix_source_location_moves,
 											admix_target_location_moves = continuing.params$admix_target_location_moves,
 											admix_proportions_moves = continuing.params$admix_proportions_moves,
 											a0_accept = continuing.params$a0_accept,
-											aD_accept = continuing.params$aD_accept,
+											a1_accept = continuing.params$a1_accept,
 											a2_accept = continuing.params$a2_accept,
 											nugget_accept = continuing.params$nugget_accept,
 											admix_source_location_accept = continuing.params$admix_source_location_accept,
@@ -1320,14 +1320,14 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 			admix.proportions[,j] <- new.params$admix.proportions
 			nugget[,j] <- new.params$nugget
 			a0[j] <- new.params$a0
-			aD[j] <- new.params$aD
+			a1[j] <- new.params$a1
 			a2[j] <- new.params$a2
 			LnL_freqs[j] <- new.params$LnL_freqs
 			Prob[j] <- LnL_freqs[j] +
 						new.params$prior_prob_admix_proportions +
 						new.params$prior_prob_nugget +
 						new.params$prior_prob_alpha0 +
-						new.params$prior_prob_alphaD +
+						new.params$prior_prob_alpha1 +
 						new.params$prior_prob_alpha2 + 
 						new.params$prior_prob_admix_target_locations + 
 						new.params$prior_prob_admix_source_locations
@@ -1346,7 +1346,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 						
 		if(i%%printfreq == 0){
 			P <- print.mcmc.update(new.params$LnL_freqs,new.params$prior_prob_admix_proportions,
-									new.params$prior_prob_nugget,new.params$prior_prob_alpha0,new.params$prior_prob_alphaD,
+									new.params$prior_prob_nugget,new.params$prior_prob_alpha0,new.params$prior_prob_alpha1,
 									new.params$prior_prob_alpha2,new.params$prior_prob_admix_target_locations,new.params$prior_prob_admix_source_locations)
 			cat(i," ---- ",P,"\n")
 		}
@@ -1354,7 +1354,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 		if(i%%savefreq == 0){	
 			save(last.params,
 				LnL_freqs,Prob,covariance,admixed.covariance,transformed.covariance,distances,
-				population.coordinates,transformed.covariance.list,admix.proportions,a0,aD,a2,nugget,samplefreq,ngen,
+				population.coordinates,transformed.covariance.list,admix.proportions,a0,a1,a2,nugget,samplefreq,ngen,
 				accept_rates,lstps,diagns,
 				target.spatial.prior.scale,source.spatial.prior.scale,last.ngen,
 				file=paste(prefix,sprintf("_space_MCMC_output%d.Robj",1),sep=''))
@@ -1368,17 +1368,17 @@ make.continuing.params <- function(MCMC.output,file.name){
 		last.params <- c(last.params,
 							"a0_diagn" = a0_diagn,
 							"a2_diagn" = a2_diagn,
-							"aD_diagn" = aD_diagn,
+							"a1_diagn" = a1_diagn,
 							"admix_proportions_diagn" = admix_proportions_diagn,
 							"admix_source_location_diagn" = admix_source_location_diagn,
 							"admix_target_location_diagn" = admix_target_location_diagn,
 							"nugget_diagn" = nugget_diagn)
 	with(last.params, {
-		continuing.params <- list(	"a0" = a0,"aD" = aD,"a2" = a2,"nugget" = nugget,"D" = D,
+		continuing.params <- list(	"a0" = a0,"a1" = a1,"a2" = a2,"nugget" = nugget,"D" = D,
 									"population.coordinates" = population.coordinates,
 									"admix.proportions" = admix.proportions,
 									"prior_prob_alpha0" = prior_prob_alpha0,
-									"prior_prob_alphaD" = prior_prob_alphaD,
+									"prior_prob_alpha1" = prior_prob_alpha1,
 									"prior_prob_alpha2" = prior_prob_alpha2,
 									"prior_prob_nugget" = prior_prob_nugget,
 									"prior_prob_admix_target_locations" = prior_prob_admix_target_locations,
@@ -1388,25 +1388,25 @@ make.continuing.params <- function(MCMC.output,file.name){
 									"source.spatial.prior.scale" = source.spatial.prior.scale,
 									"covariance" = covariance,"admixed.covariance" = admixed.covariance,
 									"transformed.covariance" = transformed.covariance,"LnL_freqs" = LnL_freqs,
-									"a0_accept" = a0_accept,"aD_accept" = aD_accept,
+									"a0_accept" = a0_accept,"a1_accept" = a1_accept,
 									"a2_accept" = a2_accept,"nugget_accept" = nugget_accept,
 									"admix_target_location_accept" = admix_target_location_accept,
 									"admix_source_location_accept" = admix_source_location_accept,
 									"admix_proportions_accept" = admix_proportions_accept,
-									"a0_accept_rate" = a0_accept_rate,"aD_accept_rate" = aD_accept_rate,
+									"a0_accept_rate" = a0_accept_rate,"a1_accept_rate" = a1_accept_rate,
 									"a2_accept_rate" = a2_accept_rate,"nugget_accept_rate" = nugget_accept_rate,
 									"admix_target_location_accept_rate" = admix_target_location_accept_rate,
 									"admix_source_location_accept_rate" = admix_source_location_accept_rate,
 									"admix_proportions_accept_rate" = admix_proportions_accept_rate,
-									"a0_moves" = a0_moves,"aD_moves" = aD_moves,"a2_moves" = a2_moves,
+									"a0_moves" = a0_moves,"a1_moves" = a1_moves,"a2_moves" = a2_moves,
 									"nugget_moves" = nugget_moves,"admix_source_location_moves" = admix_source_location_moves, 
 									"admix_target_location_moves" = admix_target_location_moves,"admix_proportions_moves" = admix_proportions_moves,
 									"spatial.prior.X.coordinates" = spatial.prior.X.coordinates,"spatial.prior.Y.coordinates" = spatial.prior.Y.coordinates, 
 									"X.grid.fineness" = X.grid.fineness,"Y.grid.fineness" = Y.grid.fineness,"nugget.grid.fineness" = nugget.grid.fineness,
-									"a0.lstp" = a0.lstp,"aD.lstp" = aD.lstp,"a2.lstp" = a2.lstp,
+									"a0.lstp" = a0.lstp,"a1.lstp" = a1.lstp,"a2.lstp" = a2.lstp,
 									"nugget.lstp" = nugget.lstp,"admix.target.location.lstp" = admix.target.location.lstp,
 									"admix.source.location.lstp" = admix.source.location.lstp,"admix.proportions.lstp" = admix.proportions.lstp,
-									"a0_diagn" = a0_diagn,"a2_diagn" = a2_diagn,"aD_diagn" = aD_diagn,"admix_proportions_diagn" = admix_proportions_diagn,
+									"a0_diagn" = a0_diagn,"a2_diagn" = a2_diagn,"a1_diagn" = a1_diagn,"admix_proportions_diagn" = admix_proportions_diagn,
 									"admix_source_location_diagn" = admix_source_location_diagn,"admix_target_location_diagn" = admix_target_location_diagn,
 									"nugget_diagn" = nugget_diagn, "last.ngen" = ngen)
 	save(continuing.params,file=file.name)
@@ -1539,12 +1539,12 @@ get.focal.conditional.mean.fstat.location <- function(focal.pop,covariance,obser
 	return(output)
 }
 
-get.fstat.location <- function(focal.pop,source.location,all.locations,covariance,observations,a0,aD,a2,mean.sample.sizes=NULL){
+get.fstat.location <- function(focal.pop,source.location,all.locations,covariance,observations,a0,a1,a2,mean.sample.sizes=NULL){
 	# recover()
 	prelims <- get.focal.conditional.mean.fstat.location(focal.pop,covariance,observations,mean.sample.sizes)
 	focal.pop.conditional.mean <- prelims$focal.pop.conditional.mean
 	mean.centered.observations <- prelims$mean.centered.observations
-	spatial.covariance <- Covariance(a0,aD,a2,fields::rdist(rbind(all.locations,source.location)))
+	spatial.covariance <- Covariance(a0,a1,a2,fields::rdist(rbind(all.locations,source.location)))
 	mean.center.matrix <- get.uprank.mean.centering.matrix(focal.pop,k,mean.sample.sizes)
 		mean.centered.spatial.covariance <- mean.center.matrix %*% spatial.covariance %*% t(mean.center.matrix)
 	mean.centered.spatial.covariance <- mean.centered.spatial.covariance[-focal.pop,-focal.pop]
@@ -1661,14 +1661,14 @@ snp.info<-rbind(snp.info,my.snps[,c("CHR","SNP")])
 save(file="hellpopfreqs.Robj",all.MAC,all.sample.size,snp.info)
 
 		# a0_accept_rate[1] <- continuing.params$a0_accept_rate
-		# aD_accept_rate[1] <- continuing.params$aD_accept_rate
+		# a1_accept_rate[1] <- continuing.params$a1_accept_rate
 		# a2_accept_rate[1] <- continuing.params$a2_accept_rate
 		# nugget_accept_rate[,1] <- continuing.params$nugget_accept_rate
 		# admix_target_location_accept_rate[,1] <- continuing.params$admix_target_location_accept_rate
 		# admix_source_location_accept_rate[,1] <- continuing.params$admix_source_location_accept_rate
 		# admix_proportions_accept_rate[,1] <- continuing.params$admix_proportions_accept_rate
 		# a0_lstp[1] <- continuing.params$a0.lstp
-		# aD_lstp[1] <- continuing.params$aD.lstp
+		# a1_lstp[1] <- continuing.params$a1.lstp
 		# a2_lstp[1] <- continuing.params$a2.lstp
 		# nugget_lstp[,1] <- continuing.params$nugget.lstp
 		# admix_target_location_lstp[,1] <- continuing.params$admix.target.location.lstp
@@ -1704,11 +1704,11 @@ get.all.spatial.fstat <- function(focal.pop,observations,covariance,focal.pop.co
 	return(fstat)
 }
 
-# # get.spatial.fstat <- function(sampled.locations,proposed.location,observations,focal.population,covariance=NULL,a0,aD,a2,focal.population.mean=NULL,get.focal.population.mean=NULL){
+# # get.spatial.fstat <- function(sampled.locations,proposed.location,observations,focal.population,covariance=NULL,a0,a1,a2,focal.population.mean=NULL,get.focal.population.mean=NULL){
 	# # recover()
 	# k <- nrow(sampled.locations)
 	# if(is.null(covariance)){
-		# covariance <- Covariance(a0,aD,a2,fields::rdist(sampled.locations))
+		# covariance <- Covariance(a0,a1,a2,fields::rdist(sampled.locations))
 	# }
 		# covariance.no.focal <- matrix(0,nrow=k,ncol=k)
 		# covariance.no.focal[1:(k-1),1:(k-1)] <- covariance[-focal.population,-focal.population]
@@ -1720,7 +1720,7 @@ get.all.spatial.fstat <- function(focal.pop,observations,covariance,focal.pop.co
 	# }
 	# coords <- rbind(sampled.locations[-focal.population,],proposed.location)
 	# tmp.D <- fields::rdist(coords[k,1:2,drop=FALSE],coords)
-	# tmp.cov <- Covariance(a0,aD,a2,tmp.D)
+	# tmp.cov <- Covariance(a0,a1,a2,tmp.D)
 	# covariance.no.focal[k,] <- tmp.cov
 	# covariance.no.focal[,k] <- tmp.cov
 	# spatial.location.mean <- get.conditional.mean(covariance.no.focal,k,observations[-focal.population,])
@@ -1866,7 +1866,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 		}
 		file.rename(fast.run.dirs[which.max(last.probs)],paste(fast.run.dirs[which.max(last.probs)],"_BestRun",sep=""))
 		setwd(list.files()[grep("BestRun",list.files())])
-			fast.run.initial.parameters <- query.MCMC.output(list.files()[grep("output",list.files())],last.param.names=c("a0","aD","a2","population.coordinates","nugget","admix.proportions"))
+			fast.run.initial.parameters <- query.MCMC.output(list.files()[grep("output",list.files())],last.param.names=c("a0","a1","a2","population.coordinates","nugget","admix.proportions"))
 		setwd("..")
 		dir.create(paste(prefix,"LongRun",sep="_"))
 		setwd(list.files()[grep("LongRun",list.files())])
