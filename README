@@ -1,0 +1,33 @@
+############################################################
+############################################################
+#	SpaceMix ReadMe
+############################################################
+############################################################
+
+PREAMBLE
+Caveat user: this code is still in beta.  Please contact
+Gideon Bradburd at gbradbrd(at)ucdavis(dot)edu with bug
+reports or questions.
+
+Also, check the git for updates!
+
+README
+This repository contains 4 other documents:
+
+(1) space.mix.MCMC.R:
+	Contains the R code for the MCMC algorithm.
+
+(2) example_dataset.Robj:
+	An R object to be loaded into working memory. Contains 
+	simulated dataset of allele counts, sample sizes,
+	and population coordinates in a named list.  The data
+	were simulated on a lattice with a central longitudinal
+	barrier to dispersal.
+
+(3) exe.spacemix.R
+	Contains commented examples (R code) of how to execute 
+	SpaceMix analyses.
+	
+(4) spacemix_plotting_functions.R
+	Contains commented examples (R code) of how to visualize
+	output from SpaceMix MCMC analysis.
