@@ -246,9 +246,8 @@ normal.lnL <- function(sample.cov,par.cov,sd,index.matrix){
 }
 
 wishart.lnL <- function(sample.cov,par.cov,n){
-	sample.cov <- n*sample.cov
 	A <- solve(par.cov)
-	lnL <- -0.5 * sum( A * sample.cov ) - (n/2)*determinant(par.cov,logarithm=TRUE)$modulus
+	lnL <- -0.5 * n * sum( A * sample.cov ) - (n/2)*determinant(par.cov,logarithm=TRUE)$modulus
 	return(lnL)
 }
 
