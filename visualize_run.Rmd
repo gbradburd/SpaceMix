@@ -1,0 +1,172 @@
+```{r setup, include=FALSE}
+if (!exists("Prob")) {
+    stop(getwd(),"Usage:
+            Rscript -e 'load\"(input .Robj)\";require(knitr);knit2html(\"visualize_run.Rmd\")'
+")
+}
+fig.dim <- 5
+opts_chunk$set(fig.height=fig.dim,fig.width=2*fig.dim,fig.align='center',echo=FALSE)
+nsteps <- sum(Prob>0)
+stepvec <- samplefreq * (1:nsteps)
+```
+
+SpaceMix Diagnostic Output
+==========================
+
+
+General trace plots
+-------------------
+
+This ran successfully for `r nsteps` generations.
+Here are the traces of log-likelihood
+and the parameters in the tranformation function:
+(note the first 20% of the log likelihood is truncated)
+```{r prob_trace, fig.height=3*fig.dim}
+layout(1:4)
+plot( stepvec, Prob[1:nsteps], main="log likelihood", ylim=range(Prob[(nsteps/5):nsteps]),xlab='iteration' )
+plot( stepvec, a0[1:nsteps], main=expression(paste(a[0])),xlab='iteration' )
+plot( stepvec, a1[1:nsteps], main=expression(paste(a[1])),xlab='iteration' )
+plot( stepvec, a2[1:nsteps], main=expression(paste(a[2])),xlab='iteration' )
+```
+
+Here are what the population-specific nuggets are doing:
+```{r plot_nuggets}
+matplot(stepvec,t(nugget[,1:nsteps]),type='l',xlab='iteration')
+```
+and the admixture proportions:
+```{r plot_admix_proportions}
+matplot(stepvec,t(admix.proportions[,1:nsteps]),type='l',xlab='iteration')
+```
+
+Scaling parameters
+------------------
+
+```{r scaling_setup, include=FALSE}
+common.params <- which(sapply(lapply(lstps,dim),length)<=1)
+pop.params <- which(sapply(lapply(lstps,dim),length)>1)
+```
+
+Here are the tuning parameters that give the **logarithm** of the step size of the MCMC,
+for common parameters:
+```{r common_scaling, fig.height=fig.dim*length(common.params)}
+layout(1:length(common.params))
+for (k in common.params) {
+    plot( stepvec, lstps[[k]][1:nsteps], xlab='iteration', ylab="log scaling",
+            main=paste("scaling parameter for",gsub("_lstp","",names(lstps)[k])) )
+}
+```
+and here they are for population-specific parameters
+```{r pop_scaling, fig.height=fig.dim*length(pop.params)}
+layout(1:length(pop.params))
+for (k in pop.params) {
+    matplot(stepvec,t(lstps[[k]][,1:nsteps]),type='l',xlab='iteration', ylab="log scaling",
+            main=paste("scaling parameter for",gsub("_lstp","",names(lstps)[k])) )
+}
+```
+
+
+Acceptance Rates
+----------------
+
+```{r accept_setup, include=FALSE}
+common.params <- which(sapply(lapply(accept_rates,dim),length)<=1)
+pop.params <- which(sapply(lapply(accept_rates,dim),length)>1)
+```
+
+Here are acceptance rates for common parameters:
+```{r accept_rates, fig.height=fig.dim*length(common.params)}
+layout(1:length(common.params))
+for (k in common.params) {
+    plot( stepvec, accept_rates[[k]][1:nsteps], xlab='iteration', ylab="acceptance rate",
+            main=paste("acceptance rate for",gsub("_accept_rate","",names(accept_rates)[k])) )
+}
+```
+and here they are for population-specific parameters
+```{r pop_accept_rates, fig.height=fig.dim*length(pop.params)}
+layout(1:length(pop.params))
+for (k in pop.params) {
+    matplot(stepvec,t(accept_rates[[k]][,1:nsteps]),type='l', xlab='iteration', ylab="acceptance rate",
+            main=paste("acceptance rate for",gsub("_accept_rate","",names(accept_rates)[k])) )
+}
+```
+
+
+Evaluating Model Fit
+--------------------
+
+
+Here is a plot of fit of estimated parametric covariance matrix to 
+the sample covariance over the course of the MCMC:
+```{r est_cov}
+plot(last.params$sample.covariance,
+        last.params$transformed.covariance,type='n',
+        ylim=c(range(unlist(transformed.covariance.list))),
+        xlim=c(range(last.params$sample.covariance)),
+        xlab="final covariance matrix",
+        ylab="estimated covariance matrix"
+    )
+abline(0,1,col="red")
+plot.steps <- floor(seq(1,nsteps,length.out=20))
+for (k in plot.steps) {
+    points( last.params$sample.covariance,
+        transformed.covariance.list[[k]],
+        pch = 20, 
+        col=adjustcolor(rainbow(length(plot.steps))[k]) 
+    )
+}
+```
+
+
+Population coordinates
+----------------------
+
+Here is what the population coordinates are doing:
+```{r pop_coords,fig.height=2*fig.dim}
+pop.coords.x <- do.call( rbind, lapply( population.coordinates[1:nsteps], function(x){x[,1]} ) )
+pop.coords.y <- do.call( rbind, lapply( population.coordinates[1:nsteps], function(x){x[,2]} ) )
+layout(1:2)
+matplot( stepvec, pop.coords.x,type='l', xlab='iteration', ylab='easting')
+matplot( stepvec, pop.coords.y,type='l', xlab='iteration', ylab='northing')
+```
+
+Here are histograms of the standard deviations of coordinate movements
+over the lsat quarter of the run:
+```{r hist_coords}
+layout(t(1:2))
+hist( apply(pop.coords.x[(3*nsteps/4):nsteps,],2,sd), breaks=50, main='eastings' )
+hist( apply(pop.coords.y[(3*nsteps/4):nsteps,],2,sd), breaks=50, main='northings' )
+```
+
+
+Inference Maps
+--------------
+
+Here is a map of the final positions of the samples:
+```{r est_map}
+pop.cols <- rep("black",last.params$k)
+plot(last.params$population.coordinates[1:last.params$k,],type='n')
+text(last.params$population.coordinates[1:last.params$k,],labels=paste(1:last.params$k),col=pop.cols)
+```
+
+```{r admix_map}
+x.min <- min(last.params$population.coordinates[,1])
+x.max <- max(last.params$population.coordinates[,1])
+y.min <- min(last.params$population.coordinates[,2])
+y.max <- max(last.params$population.coordinates[,2])
+admix.source.pop.cols <- sapply( 1:last.params$k, function (ii) {
+            adjustcolor(pop.cols[ii],last.params$admix.proportions[ii]) } )
+
+plot(last.params$population.coordinates[1:last.params$k,],type='n',
+    xlim=c(x.min,x.max), ylim=c(y.min,y.max), xlab='', ylab='')
+text(last.params$population.coordinates[1:last.params$k,],
+    col=pop.cols,labels=paste(1:last.params$k))
+text(last.params$population.coordinates[(last.params$k+1):(2*last.params$k),],
+    col=admix.source.pop.cols,labels=paste(1:last.params$k),font=3)
+arrows(x0 = last.params$population.coordinates[(last.params$k+1):(2*last.params$k),1],
+    y0 = last.params$population.coordinates[(last.params$k+1):(2*last.params$k),2],
+    x1 = last.params$population.coordinates[1:last.params$k,1],
+    y1 = last.params$population.coordinates[1:last.params$k,2],
+    lwd = last.params$admix.proportions,
+    col = admix.source.pop.cols)
+
+```
