@@ -117,7 +117,7 @@ load(list.files(pattern="MCN.frequencies.list"))
 	y.min <- min(last.params$population.coordinates[,2])
 	y.max <- max(last.params$population.coordinates[,2])
 	
-	admix.source.pop.cols <- unlist(lapply(1:last.params$k,FUN=function(i){adjustcolor(pop.cols[i],last.params$admix.proportions[i])}))
+    admix.source.pop.cols <- adjustcolor(pop.cols[1:last.params$k],last.params$admix.proportions)
 	
 	plot(last.params$population.coordinates[1:last.params$k,],type='n',
 			xlim=c(x.min,x.max),
