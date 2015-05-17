@@ -1083,9 +1083,10 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				mixing.diagn.freq,
 				savefreq,
 				directory=NULL,
-                prefix="",
-				continue=FALSE,
-				continuing.params=NULL){
+                prefix=""
+				# continue=FALSE,
+				# continuing.params=NULL
+				){
 	# recover()
 	if(!is.null(directory)){
 		setwd(directory)
@@ -1129,7 +1130,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 			save(seed,file=paste(prefix,"_seed.Robj",sep=''))
 		set.seed(seed)
 		
-	if(!continue) {
+	# if(!continue) {
 		#INITIALIZE MCMC
 				Prob[1] <- -Inf
 				covariance <- matrix(0,nrow=k*2,ncol=k*2)
@@ -1206,98 +1207,129 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 											target.spatial.prior.scale = target.spatial.prior.scale,source.spatial.prior.scale = source.spatial.prior.scale,
 											centroid = centroid)
 		last.ngen <- 0
-	} else {
-		load(continuing.params)
-		#FIX w/r/t diagn,lstp,accept_rate,moves,accept
-		a0_diagn <- continuing.params$a0_diagn
-		a1_diagn <- continuing.params$a1_diagn
-		a2_diagn <- continuing.params$a2_diagn
-		nugget_diagn <- continuing.params$nugget_diagn
-		admix_target_location_diagn <- continuing.params$admix_target_location_diagn
-		admix_source_location_diagn <- continuing.params$admix_source_location_diagn
-		admix_proportions_diagn <- continuing.params$admix_proportions_diagn
-		nugget[,1] <- continuing.params$nugget
-		a0[1] <- continuing.params$a0
-		a1[1] <- continuing.params$a1
-		a2[1] <- continuing.params$a2
-		population.coordinates[[1]] <- 	continuing.params$population.coordinates
-		admix.proportions[,1] <- continuing.params$admix.proportions
-		prior_prob_admix_proportions <- continuing.params$prior_prob_admix_proportions
-					distances[[1]] <- continuing.params$D
-						centroid <- continuing.params$centroid
-						target.spatial.prior.scale <- continuing.params$target.spatial.prior.scale
-						source.spatial.prior.scale <- continuing.params$source.spatial.prior.scale
-					covariance <- continuing.params$covariance
-					admixed.covariance <- continuing.params$admixed.covariance
-					transformed.covariance <- continuing.params$transformed.covariance
-					tmp <- save.initial.parameters(a0[1],a1[1],a2[1],nugget[,1],admix.proportions[,1],
-													covariance,admixed.covariance,transformed.covariance,
-													population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
-				LnL_freqs[1] <- continuing.params$LnL_freqs
-					cat("LnL: ",LnL_freqs[1],"\n")
-				prior_prob_alpha0 <- continuing.params$prior_prob_alpha0
-					cat("Pr(a0): ",prior_prob_alpha0,"\n")
-				prior_prob_alpha1 <- continuing.params$prior_prob_alpha1
-					cat("Pr(a1): ",prior_prob_alpha1,"\n")
-				prior_prob_alpha2 <- continuing.params$prior_prob_alpha2
-					cat("Pr(a2): ",prior_prob_alpha2,"\n")
-				prior_prob_nugget <- continuing.params$prior_prob_nugget
-					cat("Pr(nugget): ",prior_prob_nugget,"\n")
-				prior_prob_admix_target_locations <- continuing.params$prior_prob_admix_target_locations
-					cat("Pr(admix_target_locations): ",prior_prob_admix_target_locations,"\n")
-				prior_prob_admix_source_locations <- continuing.params$prior_prob_admix_source_locations
-					cat("Pr(admix_source_locations): ",prior_prob_admix_source_locations,"\n")
-					cat("Pr(admix_proportions): ",prior_prob_admix_proportions,"\n")
-				Prob[1] <- LnL_freqs[1] + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alpha1 + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
-				cat("Prob: ",Prob[1],"\n")
-		last.params <- initiate.last.params(spacemix.data = spacemix.data,
-											population.coordinates = population.coordinates[[1]],
-											admix.proportions = admix.proportions[,1],
-											a0[1],a1[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed.covariance,
-											admix.proportions.lstp = continuing.params$admix.proportions.lstp,
-											admix.target.location.lstp = continuing.params$admix.target.location.lstp,
-											admix.source.location.lstp = continuing.params$admix.source.location.lstp,
-											nugget.lstp = continuing.params$nugget.lstp,
-											a0.lstp = continuing.params$a0.lstp,
-											a1.lstp = continuing.params$a1.lstp,
-											a2.lstp = continuing.params$a2.lstp,
-											k = k,LnL_freqs = LnL_freqs[1],
-											prior_prob_alpha0 = prior_prob_alpha0,
-											prior_prob_alpha1 = prior_prob_alpha1,
-											prior_prob_alpha2 = prior_prob_alpha2,
-											prior_prob_nugget = prior_prob_nugget,
-											prior_prob_admix_proportions = prior_prob_admix_proportions,
-											prior_prob_admix_target_locations = prior_prob_admix_target_locations,
-											prior_prob_admix_source_locations = prior_prob_admix_source_locations,
-											a0_accept_rate = continuing.params$a0_accept_rate,
-											a1_accept_rate = continuing.params$a1_accept_rate,
-											a2_accept_rate = continuing.params$a2_accept_rate,
-											nugget_accept_rate = continuing.params$nugget_accept_rate,
-											admix_source_location_accept_rate = continuing.params$admix_source_location_accept_rate,
-											admix_proportions_accept_rate = continuing.params$admix_proportions_accept_rate,
-											admix_target_location_accept_rate = continuing.params$admix_target_location_accept_rate,
-											a0_moves = continuing.params$a0_moves,
-											a1_moves = continuing.params$a1_moves,
-											a2_moves = continuing.params$a2_moves,
-											nugget_moves = continuing.params$nugget_moves,
-											admix_source_location_moves = continuing.params$admix_source_location_moves,
-											admix_target_location_moves = continuing.params$admix_target_location_moves,
-											admix_proportions_moves = continuing.params$admix_proportions_moves,
-											a0_accept = continuing.params$a0_accept,
-											a1_accept = continuing.params$a1_accept,
-											a2_accept = continuing.params$a2_accept,
-											nugget_accept = continuing.params$nugget_accept,
-											admix_source_location_accept = continuing.params$admix_source_location_accept,
-											admix_target_location_accept = continuing.params$admix_target_location_accept,
-											admix_proportions_accept = continuing.params$admix_proportions_accept,
-											D = distances[[1]],
-											spatial.prior.X.coordinates = continuing.params$spatial.prior.X.coordinates,
-											spatial.prior.Y.coordinates = continuing.params$spatial.prior.Y.coordinates,
-											target.spatial.prior.scale = continuing.params$target.spatial.prior.scale,
-											source.spatial.prior.scale = continuing.params$source.spatial.prior.scale,
-											centroid = continuing.params$centroid)
-		last.ngen <- continuing.params$last.ngen
-	}
+	# } else {
+		# load(continuing.params)
+		# #FIX w/r/t diagn,lstp,accept_rate,moves,accept
+		# a0_diagn <- continuing.params$a0_diagn
+		# a1_diagn <- continuing.params$a1_diagn
+		# a2_diagn <- continuing.params$a2_diagn
+		# nugget_diagn <- continuing.params$nugget_diagn
+		# admix_target_location_diagn <- continuing.params$admix_target_location_diagn
+		# admix_source_location_diagn <- continuing.params$admix_source_location_diagn
+		# admix_proportions_diagn <- continuing.params$admix_proportions_diagn
+		# nugget[,1] <- continuing.params$nugget
+		# a0[1] <- continuing.params$a0
+		# a1[1] <- continuing.params$a1
+		# a2[1] <- continuing.params$a2
+		# population.coordinates[[1]] <- 	continuing.params$population.coordinates
+		# admix.proportions[,1] <- continuing.params$admix.proportions
+		# prior_prob_admix_proportions <- continuing.params$prior_prob_admix_proportions
+					# distances[[1]] <- continuing.params$D
+						# centroid <- continuing.params$centroid
+						# target.spatial.prior.scale <- continuing.params$target.spatial.prior.scale
+						# source.spatial.prior.scale <- continuing.params$source.spatial.prior.scale
+					# covariance <- continuing.params$covariance
+					# admixed.covariance <- continuing.params$admixed.covariance
+					# transformed.covariance <- continuing.params$transformed.covariance
+					# tmp <- save.initial.parameters(a0[1],a1[1],a2[1],nugget[,1],admix.proportions[,1],
+													# covariance,admixed.covariance,transformed.covariance,
+													# population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
+				# LnL_freqs[1] <- continuing.params$LnL_freqs
+					# cat("LnL: ",LnL_freqs[1],"\n")
+				# prior_prob_alpha0 <- continuing.params$prior_prob_alpha0
+					# cat("Pr(a0): ",prior_prob_alpha0,"\n")
+				# prior_prob_alpha1 <- continuing.params$prior_prob_alpha1
+					# cat("Pr(a1): ",prior_prob_alpha1,"\n")
+				# prior_prob_alpha2 <- continuing.params$prior_prob_alpha2
+					# cat("Pr(a2): ",prior_prob_alpha2,"\n")
+				# prior_prob_nugget <- continuing.params$prior_prob_nugget
+					# cat("Pr(nugget): ",prior_prob_nugget,"\n")
+				# prior_prob_admix_target_locations <- continuing.params$prior_prob_admix_target_locations
+					# cat("Pr(admix_target_locations): ",prior_prob_admix_target_locations,"\n")
+				# prior_prob_admix_source_locations <- continuing.params$prior_prob_admix_source_locations
+					# cat("Pr(admix_source_locations): ",prior_prob_admix_source_locations,"\n")
+					# cat("Pr(admix_proportions): ",prior_prob_admix_proportions,"\n")
+				# Prob[1] <- LnL_freqs[1] + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alpha1 + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
+				# cat("Prob: ",Prob[1],"\n")
+		# last.params <- initiate.last.params(model.option = model.option,
+											# likelihood.option = likelihood.option,
+											# samplefreq = samplefreq,
+											# ngen = ngen,
+											# spacemix.data = spacemix.data,
+											# population.coordinates = population.coordinates[[1]],
+											# admix.proportions = admix.proportions[,1],
+											# a0 = a0[1],
+											# a1 = a1[1],
+											# a2 = a2[1],
+											# nugget = nugget[,1],
+											# covariance = covariance,
+											# admixed.covariance = admixed.covariance,
+											# transformed.covariance = transformed.covariance,
+											# k = k,
+											# LnL_freqs = LnL_freqs[1],
+											# prior_prob_alpha0 ,
+											# prior_prob_alpha1,
+											# prior_prob_alpha2,
+											# prior_prob_nugget,
+											# prior_prob_admix_proportions,
+											# prior_prob_admix_target_locations,
+											# prior_prob_admix_source_locations,
+											# D,
+											# spatial.prior.X.coordinates,
+											# spatial.prior.Y.coordinates,
+											# target.spatial.prior.scale,
+											# source.spatial.prior.scale,
+											# centroid){
+
+
+		# last.params <- initiate.last.params(spacemix.data = spacemix.data,
+											# population.coordinates = population.coordinates[[1]],
+											# admix.proportions = admix.proportions[,1],
+											# a0[1],a1[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed.covariance,
+											# admix.proportions.lstp = continuing.params$admix.proportions.lstp,
+											# admix.target.location.lstp = continuing.params$admix.target.location.lstp,
+											# admix.source.location.lstp = continuing.params$admix.source.location.lstp,
+											# nugget.lstp = continuing.params$nugget.lstp,
+											# a0.lstp = continuing.params$a0.lstp,
+											# a1.lstp = continuing.params$a1.lstp,
+											# a2.lstp = continuing.params$a2.lstp,
+											# k = k,LnL_freqs = LnL_freqs[1],
+											# prior_prob_alpha0 = prior_prob_alpha0,
+											# prior_prob_alpha1 = prior_prob_alpha1,
+											# prior_prob_alpha2 = prior_prob_alpha2,
+											# prior_prob_nugget = prior_prob_nugget,
+											# prior_prob_admix_proportions = prior_prob_admix_proportions,
+											# prior_prob_admix_target_locations = prior_prob_admix_target_locations,
+											# prior_prob_admix_source_locations = prior_prob_admix_source_locations,
+											# a0_accept_rate = continuing.params$a0_accept_rate,
+											# a1_accept_rate = continuing.params$a1_accept_rate,
+											# a2_accept_rate = continuing.params$a2_accept_rate,
+											# nugget_accept_rate = continuing.params$nugget_accept_rate,
+											# admix_source_location_accept_rate = continuing.params$admix_source_location_accept_rate,
+											# admix_proportions_accept_rate = continuing.params$admix_proportions_accept_rate,
+											# admix_target_location_accept_rate = continuing.params$admix_target_location_accept_rate,
+											# a0_moves = continuing.params$a0_moves,
+											# a1_moves = continuing.params$a1_moves,
+											# a2_moves = continuing.params$a2_moves,
+											# nugget_moves = continuing.params$nugget_moves,
+											# admix_source_location_moves = continuing.params$admix_source_location_moves,
+											# admix_target_location_moves = continuing.params$admix_target_location_moves,
+											# admix_proportions_moves = continuing.params$admix_proportions_moves,
+											# a0_accept = continuing.params$a0_accept,
+											# a1_accept = continuing.params$a1_accept,
+											# a2_accept = continuing.params$a2_accept,
+											# nugget_accept = continuing.params$nugget_accept,
+											# admix_source_location_accept = continuing.params$admix_source_location_accept,
+											# admix_target_location_accept = continuing.params$admix_target_location_accept,
+											# admix_proportions_accept = continuing.params$admix_proportions_accept,
+											# D = distances[[1]],
+											# spatial.prior.X.coordinates = continuing.params$spatial.prior.X.coordinates,
+											# spatial.prior.Y.coordinates = continuing.params$spatial.prior.Y.coordinates,
+											# target.spatial.prior.scale = continuing.params$target.spatial.prior.scale,
+											# source.spatial.prior.scale = continuing.params$source.spatial.prior.scale,
+											# centroid = continuing.params$centroid)
+		# last.ngen <- continuing.params$last.ngen
+	# }
 	
 	tmp <- make.update.sampled.accept.rates.function(model.option)
 	tmp <- make.update.sampled.lstps.function(model.option)
@@ -1363,15 +1395,8 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 }
 
 make.continuing.params <- function(MCMC.output,file.name){
+	# recover()
 	load(MCMC.output)
-		last.params <- c(last.params,
-							"a0_diagn" = a0_diagn,
-							"a2_diagn" = a2_diagn,
-							"a1_diagn" = a1_diagn,
-							"admix_proportions_diagn" = admix_proportions_diagn,
-							"admix_source_location_diagn" = admix_source_location_diagn,
-							"admix_target_location_diagn" = admix_target_location_diagn,
-							"nugget_diagn" = nugget_diagn)
 	with(last.params, {
 		continuing.params <- list(	"a0" = a0,"a1" = a1,"a2" = a2,"nugget" = nugget,"D" = D,
 									"population.coordinates" = population.coordinates,
@@ -1387,27 +1412,26 @@ make.continuing.params <- function(MCMC.output,file.name){
 									"source.spatial.prior.scale" = source.spatial.prior.scale,
 									"covariance" = covariance,"admixed.covariance" = admixed.covariance,
 									"transformed.covariance" = transformed.covariance,"LnL_freqs" = LnL_freqs,
-									"a0_accept" = a0_accept,"a1_accept" = a1_accept,
-									"a2_accept" = a2_accept,"nugget_accept" = nugget_accept,
-									"admix_target_location_accept" = admix_target_location_accept,
-									"admix_source_location_accept" = admix_source_location_accept,
-									"admix_proportions_accept" = admix_proportions_accept,
-									"a0_accept_rate" = a0_accept_rate,"a1_accept_rate" = a1_accept_rate,
-									"a2_accept_rate" = a2_accept_rate,"nugget_accept_rate" = nugget_accept_rate,
-									"admix_target_location_accept_rate" = admix_target_location_accept_rate,
-									"admix_source_location_accept_rate" = admix_source_location_accept_rate,
-									"admix_proportions_accept_rate" = admix_proportions_accept_rate,
-									"a0_moves" = a0_moves,"a1_moves" = a1_moves,"a2_moves" = a2_moves,
-									"nugget_moves" = nugget_moves,"admix_source_location_moves" = admix_source_location_moves, 
-									"admix_target_location_moves" = admix_target_location_moves,"admix_proportions_moves" = admix_proportions_moves,
+									"a0_accept" = accept$a0_accept,"a1_accept" = accept$a1_accept,
+									"a2_accept" = accept$a2_accept,"nugget_accept" = accept$nugget_accept,
+									"admix_target_location_accept" = accept$admix_target_location_accept,
+									"admix_source_location_accept" = accept$admix_source_location_accept,
+									"admix_proportions_accept" = accept$admix_proportions_accept,
+									"a0_accept_rate" = accept_rates$a0_accept_rate,"a1_accept_rate" = accept_rates$a1_accept_rate,
+									"a2_accept_rate" = accept_rates$a2_accept_rate,"nugget_accept_rate" = accept_rates$nugget_accept_rate,
+									"admix_target_location_accept_rate" = accept_rates$admix_target_location_accept_rate,
+									"admix_source_location_accept_rate" = accept_rates$admix_source_location_accept_rate,
+									"admix_proportions_accept_rate" = accept_rates$admix_proportions_accept_rate,
+									"a0_moves" = moves$a0_moves,"a1_moves" = moves$a1_moves,"a2_moves" = moves$a2_moves,
+									"nugget_moves" = moves$nugget_moves,"admix_source_location_moves" = moves$admix_source_location_moves, 
+									"admix_target_location_moves" = moves$admix_target_location_moves,"admix_proportions_moves" = moves$admix_proportions_moves,
 									"spatial.prior.X.coordinates" = spatial.prior.X.coordinates,"spatial.prior.Y.coordinates" = spatial.prior.Y.coordinates, 
-									"X.grid.fineness" = X.grid.fineness,"Y.grid.fineness" = Y.grid.fineness,"nugget.grid.fineness" = nugget.grid.fineness,
-									"a0.lstp" = a0.lstp,"a1.lstp" = a1.lstp,"a2.lstp" = a2.lstp,
-									"nugget.lstp" = nugget.lstp,"admix.target.location.lstp" = admix.target.location.lstp,
-									"admix.source.location.lstp" = admix.source.location.lstp,"admix.proportions.lstp" = admix.proportions.lstp,
-									"a0_diagn" = a0_diagn,"a2_diagn" = a2_diagn,"a1_diagn" = a1_diagn,"admix_proportions_diagn" = admix_proportions_diagn,
-									"admix_source_location_diagn" = admix_source_location_diagn,"admix_target_location_diagn" = admix_target_location_diagn,
-									"nugget_diagn" = nugget_diagn, "last.ngen" = ngen)
+									"a0.lstp" = lstps$a0.lstp,"a1.lstp" = lstps$a1.lstp,"a2.lstp" = lstps$a2.lstp,
+									"nugget.lstp" = lstps$nugget.lstp,"admix.target.location.lstp" = lstps$admix.target.location.lstp,
+									"admix.source.location.lstp" = lstps$admix.source.location.lstp,"admix.proportions.lstp" = lstps$admix.proportions.lstp,
+									"a0_diagn" = diagns$a0_diagn,"a2_diagn" = diagns$a2_diagn,"a1_diagn" = diagns$a1_diagn,"admix_proportions_diagn" = diagns$admix_proportions_diagn,
+									"admix_source_location_diagn" = diagns$admix_source_location_diagn,"admix_target_location_diagn" = diagns$admix_target_location_diagn,
+									"nugget_diagn" = diagns$nugget_diagn, "last.ngen" = ngen)
 	save(continuing.params,file=file.name)
 	})
 	return(0)
@@ -1843,9 +1867,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 					mixing.diagn.freq = mixing.diagn.freq,
 					savefreq = fast.MCMC.ngen/2,
 					directory = directory,
-					prefix=paste(fast.run.dirs[i],"_",sep=""),
-					continue=FALSE,
-					continuing.params=NULL)
+					prefix=paste(fast.run.dirs[i],"_",sep=""))
 			},error=function(e){
 							cat("fast run",i,"failed","\n")
 							file.rename(
