@@ -1917,9 +1917,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 				mixing.diagn.freq = mixing.diagn.freq,
 				savefreq = savefreq,
 				directory = directory,
-                prefix=prefix,
-				continue=FALSE,
-				continuing.params=NULL)
+                prefix=prefix)
 	setwd("..")
 	return("analysis completed.")
 }
