@@ -1837,11 +1837,11 @@ run.spacemix.analysis <- function(n.fast.reps,
 		for(i in 1:n.fast.reps){
 			dir.create(fast.run.dirs[i])
 			setwd(fast.run.dirs[i])
-			random.initial.population.coordinates <- cbind(rep(0,2*k),rep(0,2*k))
-#			random.initial.population.coordinates <- cbind( runif(2*k,min(spatial.prior.X.coordinates),
-#																	max(spatial.prior.X.coordinates)),
-#															runif(2*k,min(spatial.prior.Y.coordinates),
-#																	max(spatial.prior.Y.coordinates)))
+#			random.initial.population.coordinates <- cbind(rep(0,2*k),rep(0,2*k))
+			random.initial.population.coordinates <- cbind( runif(2*k,min(spatial.prior.X.coordinates),
+																	max(spatial.prior.X.coordinates)),
+															runif(2*k,min(spatial.prior.Y.coordinates),
+																	max(spatial.prior.Y.coordinates)))
 			initial.parameters <- list("population.coordinates" = random.initial.population.coordinates)
 			tryCatch({
 				MCMC(model.option = fast.model.option,
