@@ -1544,7 +1544,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 							file.rename(
 									paste("../",fast.run.dirs[i],sep=""),
 									paste("../","failed_",fast.run.dirs[i],sep="")) ;
-							save(last.params,transformed.covariance.prime,LnL_freqs_prime,file=paste("mcmc_dump_",i,".Robj",sep=""))
+							save.image(file="spacemix.dump.RData")
 							})
 			setwd("..")
 		}
