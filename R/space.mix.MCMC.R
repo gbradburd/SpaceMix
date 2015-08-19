@@ -1,4 +1,3 @@
-
 update.matrix <- function(matrix,pop.to.update,update.vector){
 	matrix[pop.to.update,] <- update.vector
 	matrix[,pop.to.update] <- update.vector
@@ -1053,15 +1052,10 @@ initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,
 						"identity.matrix" = diag(k))
 	return(last.params)
 }
-
-
-}	
 	
 	
-MCMC <-function(model.option,				#no_movement, target, source, source_and_target
-				data.type,					#sample.covariance, sample.frequencies, counts
-				likelihood.option,			#normal_approx,wishart
-				proj.mat.option = NULL,
+MCMC <-function(model.option,
+				data.type,
 				sample.frequencies = NULL,
 				mean.sample.sizes = NULL,
 				counts = NULL,
@@ -1071,7 +1065,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				source.spatial.prior.scale = NULL,
 				spatial.prior.X.coordinates,
 				spatial.prior.Y.coordinates,
-				initial.parameters = NULL,		#a0,a1,a2,population.coordinates,admix.proportions
+				initial.parameters = NULL,
 				round.earth,
 				k,
 				loci,
@@ -1081,10 +1075,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				mixing.diagn.freq,
 				savefreq,
 				directory=NULL,
-                prefix=""
-				# continue=FALSE,
-				# continuing.params=NULL
-				){
+                prefix=""){
 	# recover()
 	if(!is.null(directory)){
 		setwd(directory)
@@ -1205,130 +1196,7 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 											target.spatial.prior.scale = target.spatial.prior.scale,source.spatial.prior.scale = source.spatial.prior.scale,
 											centroid = centroid)
 		last.ngen <- 0
-	# } else {
-		# load(continuing.params)
-		# #FIX w/r/t diagn,lstp,accept_rate,moves,accept
-		# a0_diagn <- continuing.params$a0_diagn
-		# a1_diagn <- continuing.params$a1_diagn
-		# a2_diagn <- continuing.params$a2_diagn
-		# nugget_diagn <- continuing.params$nugget_diagn
-		# admix_target_location_diagn <- continuing.params$admix_target_location_diagn
-		# admix_source_location_diagn <- continuing.params$admix_source_location_diagn
-		# admix_proportions_diagn <- continuing.params$admix_proportions_diagn
-		# nugget[,1] <- continuing.params$nugget
-		# a0[1] <- continuing.params$a0
-		# a1[1] <- continuing.params$a1
-		# a2[1] <- continuing.params$a2
-		# population.coordinates[[1]] <- 	continuing.params$population.coordinates
-		# admix.proportions[,1] <- continuing.params$admix.proportions
-		# prior_prob_admix_proportions <- continuing.params$prior_prob_admix_proportions
-					# distances[[1]] <- continuing.params$D
-						# centroid <- continuing.params$centroid
-						# target.spatial.prior.scale <- continuing.params$target.spatial.prior.scale
-						# source.spatial.prior.scale <- continuing.params$source.spatial.prior.scale
-					# covariance <- continuing.params$covariance
-					# admixed.covariance <- continuing.params$admixed.covariance
-					# transformed.covariance <- continuing.params$transformed.covariance
-					# tmp <- save.initial.parameters(a0[1],a1[1],a2[1],nugget[,1],admix.proportions[,1],
-													# covariance,admixed.covariance,transformed.covariance,
-													# population.coordinates[[1]],distances[[1]],spacemix.data$projection.matrix,spacemix.data$inv.mean.sample.sizes,prefix)
-				# LnL_freqs[1] <- continuing.params$LnL_freqs
-					# cat("LnL: ",LnL_freqs[1],"\n")
-				# prior_prob_alpha0 <- continuing.params$prior_prob_alpha0
-					# cat("Pr(a0): ",prior_prob_alpha0,"\n")
-				# prior_prob_alpha1 <- continuing.params$prior_prob_alpha1
-					# cat("Pr(a1): ",prior_prob_alpha1,"\n")
-				# prior_prob_alpha2 <- continuing.params$prior_prob_alpha2
-					# cat("Pr(a2): ",prior_prob_alpha2,"\n")
-				# prior_prob_nugget <- continuing.params$prior_prob_nugget
-					# cat("Pr(nugget): ",prior_prob_nugget,"\n")
-				# prior_prob_admix_target_locations <- continuing.params$prior_prob_admix_target_locations
-					# cat("Pr(admix_target_locations): ",prior_prob_admix_target_locations,"\n")
-				# prior_prob_admix_source_locations <- continuing.params$prior_prob_admix_source_locations
-					# cat("Pr(admix_source_locations): ",prior_prob_admix_source_locations,"\n")
-					# cat("Pr(admix_proportions): ",prior_prob_admix_proportions,"\n")
-				# Prob[1] <- LnL_freqs[1] + prior_prob_admix_proportions + prior_prob_nugget + prior_prob_alpha0 + prior_prob_alpha1 + prior_prob_alpha2 + prior_prob_admix_target_locations + prior_prob_admix_source_locations
-				# cat("Prob: ",Prob[1],"\n")
-		# last.params <- initiate.last.params(model.option = model.option,
-											# likelihood.option = likelihood.option,
-											# samplefreq = samplefreq,
-											# ngen = ngen,
-											# spacemix.data = spacemix.data,
-											# population.coordinates = population.coordinates[[1]],
-											# admix.proportions = admix.proportions[,1],
-											# a0 = a0[1],
-											# a1 = a1[1],
-											# a2 = a2[1],
-											# nugget = nugget[,1],
-											# covariance = covariance,
-											# admixed.covariance = admixed.covariance,
-											# transformed.covariance = transformed.covariance,
-											# k = k,
-											# LnL_freqs = LnL_freqs[1],
-											# prior_prob_alpha0 ,
-											# prior_prob_alpha1,
-											# prior_prob_alpha2,
-											# prior_prob_nugget,
-											# prior_prob_admix_proportions,
-											# prior_prob_admix_target_locations,
-											# prior_prob_admix_source_locations,
-											# D,
-											# spatial.prior.X.coordinates,
-											# spatial.prior.Y.coordinates,
-											# target.spatial.prior.scale,
-											# source.spatial.prior.scale,
-											# centroid){
 
-
-		# last.params <- initiate.last.params(spacemix.data = spacemix.data,
-											# population.coordinates = population.coordinates[[1]],
-											# admix.proportions = admix.proportions[,1],
-											# a0[1],a1[1],a2[1],nugget[,1],covariance,admixed.covariance,transformed.covariance,
-											# admix.proportions.lstp = continuing.params$admix.proportions.lstp,
-											# admix.target.location.lstp = continuing.params$admix.target.location.lstp,
-											# admix.source.location.lstp = continuing.params$admix.source.location.lstp,
-											# nugget.lstp = continuing.params$nugget.lstp,
-											# a0.lstp = continuing.params$a0.lstp,
-											# a1.lstp = continuing.params$a1.lstp,
-											# a2.lstp = continuing.params$a2.lstp,
-											# k = k,LnL_freqs = LnL_freqs[1],
-											# prior_prob_alpha0 = prior_prob_alpha0,
-											# prior_prob_alpha1 = prior_prob_alpha1,
-											# prior_prob_alpha2 = prior_prob_alpha2,
-											# prior_prob_nugget = prior_prob_nugget,
-											# prior_prob_admix_proportions = prior_prob_admix_proportions,
-											# prior_prob_admix_target_locations = prior_prob_admix_target_locations,
-											# prior_prob_admix_source_locations = prior_prob_admix_source_locations,
-											# a0_accept_rate = continuing.params$a0_accept_rate,
-											# a1_accept_rate = continuing.params$a1_accept_rate,
-											# a2_accept_rate = continuing.params$a2_accept_rate,
-											# nugget_accept_rate = continuing.params$nugget_accept_rate,
-											# admix_source_location_accept_rate = continuing.params$admix_source_location_accept_rate,
-											# admix_proportions_accept_rate = continuing.params$admix_proportions_accept_rate,
-											# admix_target_location_accept_rate = continuing.params$admix_target_location_accept_rate,
-											# a0_moves = continuing.params$a0_moves,
-											# a1_moves = continuing.params$a1_moves,
-											# a2_moves = continuing.params$a2_moves,
-											# nugget_moves = continuing.params$nugget_moves,
-											# admix_source_location_moves = continuing.params$admix_source_location_moves,
-											# admix_target_location_moves = continuing.params$admix_target_location_moves,
-											# admix_proportions_moves = continuing.params$admix_proportions_moves,
-											# a0_accept = continuing.params$a0_accept,
-											# a1_accept = continuing.params$a1_accept,
-											# a2_accept = continuing.params$a2_accept,
-											# nugget_accept = continuing.params$nugget_accept,
-											# admix_source_location_accept = continuing.params$admix_source_location_accept,
-											# admix_target_location_accept = continuing.params$admix_target_location_accept,
-											# admix_proportions_accept = continuing.params$admix_proportions_accept,
-											# D = distances[[1]],
-											# spatial.prior.X.coordinates = continuing.params$spatial.prior.X.coordinates,
-											# spatial.prior.Y.coordinates = continuing.params$spatial.prior.Y.coordinates,
-											# target.spatial.prior.scale = continuing.params$target.spatial.prior.scale,
-											# source.spatial.prior.scale = continuing.params$source.spatial.prior.scale,
-											# centroid = continuing.params$centroid)
-		# last.ngen <- continuing.params$last.ngen
-	# }
-	
 	tmp <- make.update.sampled.accept.rates.function(model.option)
 	tmp <- make.update.sampled.lstps.function(model.option)
 	tmp <- make.update.diagns.function(model.option)
@@ -1382,106 +1250,124 @@ MCMC <-function(model.option,				#no_movement, target, source, source_and_target
 				
 		if(i%%savefreq == 0){	
 			save(last.params,
-				LnL_freqs,Prob,covariance,admixed.covariance,transformed.covariance,distances,
-				population.coordinates,transformed.covariance.list,admix.proportions,a0,a1,a2,nugget,samplefreq,ngen,
+				LnL_freqs,Prob,distances,population.coordinates,
+				transformed.covariance.list,admix.proportions,a0,a1,a2,nugget,samplefreq,ngen,
 				accept_rates,lstps,diagns,
-				target.spatial.prior.scale,source.spatial.prior.scale,last.ngen,
+				target.spatial.prior.scale,source.spatial.prior.scale,
 				file=paste(prefix,sprintf("_space_MCMC_output%d.Robj",1),sep=''))
 		}
 	}
     return(paste("Output",i,"runs to",paste(prefix,"_MCMC_output*.Robj",sep=''),"."))
 }
 
-make.continuing.params <- function(MCMC.output,file.name){
-	# recover()
-	load(MCMC.output)
-	with(last.params, {
-		continuing.params <- list(	"a0" = a0,"a1" = a1,"a2" = a2,"nugget" = nugget,"D" = D,
-									"population.coordinates" = population.coordinates,
-									"admix.proportions" = admix.proportions,
-									"prior_prob_alpha0" = prior_prob_alpha0,
-									"prior_prob_alpha1" = prior_prob_alpha1,
-									"prior_prob_alpha2" = prior_prob_alpha2,
-									"prior_prob_nugget" = prior_prob_nugget,
-									"prior_prob_admix_target_locations" = prior_prob_admix_target_locations,
-									"prior_prob_admix_source_locations" = prior_prob_admix_source_locations,
-									"prior_prob_admix_proportions" = prior_prob_admix_proportions,
-									"centroid" = centroid,"target.spatial.prior.scale" = target.spatial.prior.scale,
-									"source.spatial.prior.scale" = source.spatial.prior.scale,
-									"covariance" = covariance,"admixed.covariance" = admixed.covariance,
-									"transformed.covariance" = transformed.covariance,"LnL_freqs" = LnL_freqs,
-									"a0_accept" = accept$a0_accept,"a1_accept" = accept$a1_accept,
-									"a2_accept" = accept$a2_accept,"nugget_accept" = accept$nugget_accept,
-									"admix_target_location_accept" = accept$admix_target_location_accept,
-									"admix_source_location_accept" = accept$admix_source_location_accept,
-									"admix_proportions_accept" = accept$admix_proportions_accept,
-									"a0_accept_rate" = accept_rates$a0_accept_rate,"a1_accept_rate" = accept_rates$a1_accept_rate,
-									"a2_accept_rate" = accept_rates$a2_accept_rate,"nugget_accept_rate" = accept_rates$nugget_accept_rate,
-									"admix_target_location_accept_rate" = accept_rates$admix_target_location_accept_rate,
-									"admix_source_location_accept_rate" = accept_rates$admix_source_location_accept_rate,
-									"admix_proportions_accept_rate" = accept_rates$admix_proportions_accept_rate,
-									"a0_moves" = moves$a0_moves,"a1_moves" = moves$a1_moves,"a2_moves" = moves$a2_moves,
-									"nugget_moves" = moves$nugget_moves,"admix_source_location_moves" = moves$admix_source_location_moves, 
-									"admix_target_location_moves" = moves$admix_target_location_moves,"admix_proportions_moves" = moves$admix_proportions_moves,
-									"spatial.prior.X.coordinates" = spatial.prior.X.coordinates,"spatial.prior.Y.coordinates" = spatial.prior.Y.coordinates, 
-									"a0.lstp" = lstps$a0.lstp,"a1.lstp" = lstps$a1.lstp,"a2.lstp" = lstps$a2.lstp,
-									"nugget.lstp" = lstps$nugget.lstp,"admix.target.location.lstp" = lstps$admix.target.location.lstp,
-									"admix.source.location.lstp" = lstps$admix.source.location.lstp,"admix.proportions.lstp" = lstps$admix.proportions.lstp,
-									"a0_diagn" = diagns$a0_diagn,"a2_diagn" = diagns$a2_diagn,"a1_diagn" = diagns$a1_diagn,"admix_proportions_diagn" = diagns$admix_proportions_diagn,
-									"admix_source_location_diagn" = diagns$admix_source_location_diagn,"admix_target_location_diagn" = diagns$admix_target_location_diagn,
-									"nugget_diagn" = diagns$nugget_diagn, "last.ngen" = ngen)
-	save(continuing.params,file=file.name)
-	})
-	return(0)
-}
 
-drop.objects.pre.link.up <- function(object,length){
-	if(class(object)=="matrix"){
-		object.dim <- dim(object)
-	} else {
-		object.dim <- length(object)
-	}
-	object.drop <- !any(grepl(length,object.dim))
-	return(object.drop)
-}
 
-link.up.posteriors <- function(MCMC.output1,MCMC.output2,linked.up.output.file.name){
-	recover()
-	load(MCMC.output1)
-		rm(list = setdiff(unique(c(	ls(pattern="diagn"),
-							ls(pattern="last.params"),
-							objects()[sapply(mget(objects()), drop.objects.pre.link.up,length=ngen/samplefreq)])),c("MCMC.output2","linked.up.output.file.name")))
-    parameters <- objects()
-    for(i in 1:length(parameters)){
-        assign(sprintf("tmp.%s", parameters[i]), get(parameters[i]))
-    }
-    load(MCMC.output2)
-    for (i in 1:length(parameters)) {
-    	if(class(get(parameters[i])) == "numeric"){
-    		assign(parameters[i],c(get(sprintf("tmp.%s", 
-                    parameters[i])), get(parameters[i])))
-    	} else if(class(get(parameters[i])) == "matrix"){
-    		assign(parameters[i],cbind(get(sprintf("tmp.%s", 
-                    parameters[i])), get(parameters[i])))
-    	} else if(class(get(parameters[i])) == "list"){
-    		assign(parameters[i],c(get(sprintf("tmp.%s", 
-                    parameters[i])), get(parameters[i])))
-    	}
-    }
-    rm(list = objects(pattern = "tmp."))
-    save(list = setdiff(ls(all.names = TRUE), "linked.up.output.file.name"), 
-        file = paste(linked.up.output.file.name, ".Robj", sep = ""))
-	return(0)
-}
 
+#' Runs a SpaceMix analysis
+#'
+#' This function runs a Markov chain Monte Carlo to estimate a geogenetic map of your genotyped samples.
+#' A SpaceMix analysis can be run with any of 4 separate models:
+#' \enumerate{
+#' \item "no_movement" - populations do not choose their own locations, nor can they draw admixture.
+#' The only parameters to be estimated are: the alpha parameters of the spatial 
+#' covariance function and the nugget parameters
+#' \item "source" - populations do not choose their own locations, but they do draw admixture.
+#' The parameters to be estimated are: the alpha parameters of the spatial 
+#' covariance function, the nugget parameters, the locations of the sources of admixture,
+#' the strength of that admixture.
+#' \item "target" - populations choose their own locations, but no admixture.
+#' The parameters to be estimated are: the alpha parameters of the spatial 
+#' covariance function, the nugget parameters, the population locations.
+#' \item "source_and_target" - populations choose their own locations AND they draw admixture.
+#' The parameters to be estimated are: the alpha parameters of the spatial 
+#' covariance function, the nugget parameters, the population locations,
+#' the locations of the sources of admixture, and the strength of that admixture.
+#' }
+#'
+#' The algorithm proceeds by running a user-specified number of short initial runs
+#' from random locations in parameter space to find a generally good area, then one
+#' long run from the final location in parameter space from the best short run,
+#' the results of which are what the user cares about.  The user can also choose
+#' to run only a single long analysis, for which the initial parameters may be specified.
+#' 
+#' @param n.fast.reps The number of short initial runs to perform.
+#' @param fast.MCMC.ngen The number of generations to run each initial MCMC analysis.
+#' @param fast.model.option The model to be used in the short runs:  may be "no_movement","source","target","source_and_target".
+#' @param long.model.option The model to be used in the long run:  may be "no_movement","source","target","source_and_target".
+#' @param data.type The data type to be used.  May be "sample.covariance","sample.frequencies","counts".
+#'			Please see the vignette for a discussion of what these different data elements should look like.
+#' @param sample.frequencies Data to be specified if "sample.frequencies" is chosen as data.type.
+#' @param mean.sample.sizes Data to be specified if "sample.frequencies" or "sample.covariance" are chosen as data.type.
+#' @param counts Data to be specified if "counts" is chosen as data.type.
+#' @param sample.sizes Data to be specified if "counts" is chosen as data.type.
+#' @param sample.covariance Data to be specified if "sample.covariance" is chosen as data.type.
+#' @param target.spatial.prior.scale The variance on the spatial prior on population locations, default is half the pairwise observed distance.
+#' @param source.spatial.prior.scale The variance on the spatial prior on sources of admixture, default is twice the pairwise observed distance.
+#' @param spatial.prior.X.coordinates 'Observed' sample longitude, or, if you want to examine the influence of the prior, random values.
+#' @param spatial.prior.Y.coordinates 'Observed' sample latitude, or, if you want to examine the influence of the prior, random values.
+#' @param round.earth Option of whether you want to estimate locations on a plane (round.earth = FALSE) or a sphere (round.earth = TRUE).
+#' @param long.run.initial.parameters List of parameter values that can be passed directly to the long run MCMC as initial parameter values.
+#' 			The list should include values for \code{a0}, \code{a1}, \code{a2}, \code{population.coordinates}, \code{admix.proportions},
+#'			and \code{nugget}, and each element of the list should named for the corresponding parameter 
+#'			(e.g., \code{list("a0" = 1.07, "a1" = 0.5, ...)}).
+#' @param k Number of samples.
+#' @param loci Number of loci.
+#' @param ngen Number of MCMC gnereations for the long MCMC.
+#' @param printfreq Frequency with which updates are printed.
+#' @param samplefreq Frequency with which samples are logged from the MCMC (basically the thinning).
+#' @param mixing.diagn.freq Frequency of adaptive Metropolis-within-Gibbs updates do the tuning parameters of the proposal distributions.
+#' @param savefreq Frequency with which MCMC_output object is saved.
+#' @param directory Directory into which you want output to be saved.
+#' @param prefix Prefix to be attached to all output files.
+#'
+#' @return This function saves an output R object (".Robj") which contains the results of the analysis.
+#' The components of this R object are:
+#' \itemize{
+#' \item a0 - The posterior distribution on parameter \eqn{\alpha_0}.
+#' \item a1 - The posterior distribution on parameter \eqn{\alpha_1}.
+#' \item a2 - The posterior distribution on parameter \eqn{\alpha_2}.
+#' \item accept_rates - The list of acceptance rates of different parameters over the course of the MCMC. 
+#'		The total number of elements in each element of the list is equal to the number of sampled 
+#'		MCMC iterations (i.e., the total number of generations divided by the sample frequency).
+#' \item admix.proportions - The posterior distribution on admixture proportions.  This is a matrix
+#'		in which the \eqn{i}th column is the vector of estimated admixture proportions from the 
+#'		\eqn{i}th sampled generation of the MCMC.
+#' \item diagns - The list of acceptance rates for each parameter over the last 50 MCMC iterations.
+#' \item distances - The list of pairwise distances between all samples and their sources of admixture over the 
+#'		course of the MCMC.  Each element of the list is a pairwise distance matrix of dimension \eqn{2*K} by
+#'		\eqn{2*K}, where K is the number of samples.  The total number of elements in the list is equal to the
+#'		number of sampled MCMC iterations (i.e., the total number of generations divided by the sample frequency).
+#' \item last.params - The list of values passed between each iteration of the MCMC,
+#' 		sampled at the last iteration of the MCMC (i.e., the location in parameter space from the
+#'		very end of the analysis, along with other quantities passed between parameter update functions).
+#' \item LnL_freqs - The vector of likelihood values sampled over the course of the MCMC.
+#' \item lstps - A list giving the log of the scale of the tuning parameters, updated via an 
+#'		adaptive MCMC procedure, for each model parameter. The total number of elements in each 
+#'		element of the list is equal to the number of sampled MCMC iterations 
+#'		(i.e., the total number of generations divided by the sample frequency).
+#' \item ngen - The user-specified number of generations of the MCMC.
+#' \item nugget - The posterior distribution on nugget parameters.  This is a matrix
+#'	in which the \eqn{i}th column is the vector of estimated nuggets from the \eqn{i}th sampled 
+#'	generation of the MCMC.
+#' \item population.coordinates - The posterior distribution on sample coordinates in geogenetic space.  Each 
+#'		element of the list is a matrix with 2 columns (Eastings and Northings, which correspond to Long and Lat 
+#'		in the geogenetic space and \eqn{2*K} rows, where \eqn{K} is the number of samples in the dataset.  The first
+#'		\eqn{K} rows correspond to the geogenetic coordinates of the samples themselves, and the \eqn{K+1}:\eqn{2*K}
+#'		rows give the geogenetic coordinates of the source of admixture for each sample.
+#' \item Prob - The vector of posterior probability values sampled over the course of the MCMC.
+#' \item samplefreq - The number of iterations between each time the MCMC is sampled. A higher frequency (lower \code{samplefreq})
+#'		result in more sampled iterations per analysis, with a higher autocorrelation between sampled parameter estimates.
+#' \item source.spatial.prior.scale - The variance of the prior distribution on admixture source geogenetic locations.
+#' \item target.spatial.prior.scale - The variance of the prior distribution on sample geogenetic locations.
+#' \item transformed.covariance.list - The posterior distribution of the mean-centered and projected parametric covariance matrix.
+#' 		This is of dimension \eqn{K-1} by \eqn{K-1}, where \eqn{K} is the number of samples.
+#' }				
+				
 run.spacemix.analysis <- function(n.fast.reps,
 									fast.MCMC.ngen,
 									fast.model.option,
 									long.model.option,
 									data.type,
-									fast.likelihood.option,
-									long.likelihood.option,
-									proj.mat.option=NULL,
 									sample.frequencies=NULL,
 									mean.sample.sizes=NULL,
 									counts=NULL,
@@ -1516,8 +1402,6 @@ run.spacemix.analysis <- function(n.fast.reps,
 			tryCatch({
 				MCMC(model.option = fast.model.option,
 					data.type = data.type,
-					likelihood.option = fast.likelihood.option,
-					proj.mat.option = proj.mat.option,
 					sample.frequencies = sample.frequencies,
 					mean.sample.sizes = mean.sample.sizes,
 					counts = counts,
@@ -1568,8 +1452,6 @@ run.spacemix.analysis <- function(n.fast.reps,
 	}
 			MCMC(model.option = long.model.option,
 				data.type = data.type,
-				likelihood.option = long.likelihood.option,
-				proj.mat.option = proj.mat.option,
 				sample.frequencies = sample.frequencies,
 				mean.sample.sizes = mean.sample.sizes,
 				counts = counts,
