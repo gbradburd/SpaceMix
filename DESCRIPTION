@@ -4,6 +4,8 @@ Version: 0.0.0.9000
 Authors@R: person("Gideon", "Bradburd", email = "gbradburd@ucdavis.edu", role = c("aut", "cre"))
 Description: This package contains the scripts necessary to run SpaceMix, a statistical method for inferring and visualizing patterns of population genetic structure.  The output is a geogenetic map in which distances between samples reflect genetic, rather than geographic distance.  In addition, this method infers long-distance admixture events, and visualizes them as arrows, from the source of admixture to its target, on this geogenetic map.
 Depends: R (>= 3.2.1)
-Imports: fields, matrixcalc
+Imports: fields, matrixcalc, MASS, shapes
 License: BSD
 LazyData: true
+Suggests: knitr
+VignetteBuilder: knitr

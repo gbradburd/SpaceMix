@@ -233,6 +233,7 @@ Prior_prob_nugget <- function(nugget){
 }
 
 Prior_prob_admix_proportions <- function(admix_proportions){
+	admix_proportions <- admix_proportions * 2
 	sum(dbeta(admix_proportions,shape1=1,shape2=100,log=TRUE))
 }
 
@@ -272,7 +273,7 @@ Covariance <- function(a0,a1,a2,GeoDist) {
 admixed.Covariance <- function(covariance,admix.proportions,nugget,k,inv.mean.sample.sizes,ident.mat){
 	# recover()
 	if(any(admix.proportions !=0)){
-		w_k <- admix.proportions/2
+		w_k <- admix.proportions
 		admixed.Covariance <- 	tcrossprod((1-w_k),(1-w_k)) * 	covariance[1:k,1:k] + 
 								tcrossprod((1-w_k),(w_k)) 	* 	covariance[1:k,(k+1):(2*k)] +
 								tcrossprod(w_k,(1-w_k)) 	*	covariance[(k+1):(2*k),1:k] +
@@ -549,10 +550,10 @@ initiate.admix.proportions <- function(k,model.option){
 		admix.proportions <- numeric(k)
 		prior_prob_admix_proportions <- 0
 	} else if(model.option == "source"){
-		admix.proportions <- matrix(rbeta(k,shape1=1,shape2=50),nrow=k,ncol=1)
+		admix.proportions <- matrix(rbeta(k,shape1=1,shape2=50),nrow=k,ncol=1) / 2
 		prior_prob_admix_proportions <- Prior_prob_admix_proportions(admix.proportions)
 	} else if(model.option == "source_and_target"){
-		admix.proportions <- matrix(rbeta(k,shape1=1,shape2=50),nrow=k,ncol=1)
+		admix.proportions <- matrix(rbeta(k,shape1=1,shape2=50),nrow=k,ncol=1) / 2
 		prior_prob_admix_proportions <- Prior_prob_admix_proportions(admix.proportions)
 	}
 	initiate.admix.proportions.list <- list("admix.proportions" = admix.proportions, 
@@ -1054,7 +1055,7 @@ initiate.last.params <- function(model.option,likelihood.option,samplefreq,ngen,
 }
 	
 	
-MCMC <-function(model.option,
+MCMC <- function(model.option,
 				data.type,
 				sample.frequencies = NULL,
 				mean.sample.sizes = NULL,
@@ -1080,7 +1081,8 @@ MCMC <-function(model.option,
 	if(!is.null(directory)){
 		setwd(directory)
 	}
-	
+	proj.mat.option <- NULL
+	likelihood.option <- "wishart"
 	spacemix.data <- spacemix.data(data.type = data.type,
 									proj.mat.option = proj.mat.option,
 									likelihood.option = likelihood.option,
@@ -1261,7 +1263,31 @@ MCMC <-function(model.option,
 }
 
 
-
+query.MCMC.output <- function(MCMC.output,param.names=NULL,last.param.names=NULL){
+	if(!is.null(param.names)){
+		param.list <- vector("list",length=length(param.names))
+		names(param.list) <- param.names
+		load(MCMC.output)
+			for(i in 1:length(param.names)){
+				param.list[[param.names[i]]] <- get(param.names[i])
+			}
+	}
+	if(!is.null(last.param.names)){
+		last.param.list <- vector("list",length=length(last.param.names))
+		names(last.param.list) <- last.param.names
+		load(MCMC.output)
+			for(i in 1:length(last.param.names)){
+				last.param.list[[last.param.names[i]]] <- get(last.param.names[i],last.params)
+			}
+	}
+	if(!is.null(param.names) & !is.null(last.param.names)){
+		param.list <- c(param.list,last.param.list)
+	}
+	if(is.null(param.names) & !is.null(last.param.names)){
+		param.list <- last.param.list
+	}
+	return(param.list)
+}
 
 #' Runs a SpaceMix analysis
 #'
@@ -1361,8 +1387,40 @@ MCMC <-function(model.option,
 #' \item target.spatial.prior.scale - The variance of the prior distribution on sample geogenetic locations.
 #' \item transformed.covariance.list - The posterior distribution of the mean-centered and projected parametric covariance matrix.
 #' 		This is of dimension \eqn{K-1} by \eqn{K-1}, where \eqn{K} is the number of samples.
-#' }				
-				
+#' }
+#' 
+#' @examples
+#' # load example dataset
+#' data(spacemix.example.dataset)
+#' 
+#' # run example analysis
+#' run.spacemix.analysis(n.fast.reps = 2,
+#' 			fast.MCMC.ngen = 100,
+#' 			fast.model.option = "source_and_target",
+#' 			long.model.option = "source_and_target",
+#' 			data.type = "counts",
+#' 			sample.frequencies = NULL,
+#' 			mean.sample.sizes = NULL,
+#' 			counts = spacemix.dataset$allele.counts,
+#' 			sample.sizes = spacemix.dataset$sample.sizes,
+#' 			sample.covariance = NULL,
+#'			target.spatial.prior.scale = NULL,
+#' 			source.spatial.prior.scale = NULL,
+#' 			spatial.prior.X.coordinates = spacemix.dataset$population.coordinates[,1],
+#' 			spatial.prior.Y.coordinates = spacemix.dataset$population.coordinates[,2],
+#' 			round.earth = FALSE,
+#' 			long.run.initial.parameters = NULL,
+#' 			k = nrow(spacemix.dataset$allele.counts),
+#' 			loci = ncol(spacemix.dataset$allele.counts),
+#' 			ngen = 5000,
+#'			printfreq = 50,
+#' 			samplefreq = 5,
+#' 			mixing.diagn.freq = 50,
+#' 			savefreq = 5000,
+#' 			directory = NULL,
+#' 			prefix = "example_run")
+
+		
 run.spacemix.analysis <- function(n.fast.reps,
 									fast.MCMC.ngen,
 									fast.model.option,
@@ -1388,6 +1446,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 									savefreq,
 									directory=NULL,
 									prefix){
+	# recover()									
 	if(n.fast.reps !=0){
 		fast.run.dirs <- unlist(lapply(1:n.fast.reps,FUN=function(i){paste("fast_run_",i,sep="")}))
 		for(i in 1:n.fast.reps){
@@ -1475,3 +1534,462 @@ run.spacemix.analysis <- function(n.fast.reps,
 	setwd("..")
 	return("analysis completed.")
 }
+
+#' Performs a Procrustes superimposition
+#'
+#' This function performs a full Procrustes superimposition of the 
+#' geogenetic locations estimated with SpaceMix onto a reference set 
+#' of observed geographic sampling coordinates. This superimposition
+#' consists of a rotation, reflection, scaling, and translation of the 
+#' estimated locations so that they most closely match the reference
+#' coordinates.  This function can also be used to transform the 
+#' estimated sources of admixture along with the geogenetic locations,
+#' so that both are in the same frame of reference.
+#' 
+#' @param X A k x 2 matrix of the reference coordinates.
+#' @param Y A k x 2 matrix of the coordinates to be transformed.
+#' @param k The number of samples.  This should be \code{nrow(X)}.
+#' @param admix.source.locs The k x 2 matrix of estimated sources
+#' 		of admixture. This may be left \code{NULL} if the geogenetic
+#'		locations are being transformed.
+#' @param option This argument, which takes the values 1 or 2, 
+#'		specifies whether the function returns the transformed 
+#' 		geogenetic locations (1) or transformed sources of admixture (2).
+#'		
+#' @return This function returns a k x 2 matrix of transformed coordinates,
+#'		either those of the geogenetic locations (if option 1 is specified), 
+#'		or those of the sources of admixture (if option 2 is specified).
+#' 
+#' @examples
+#' 
+#' # load example location data
+#'	data(spacemix.location.data)
+#' 
+#' # perform Procrustes superimposition of 
+#' #  geogenetic locations onto sampling coordinates
+#' proc.geogen.coords <- spacemix.procrustes(X = spacemix.location.data$sample.coords,
+#' 						Y = spacemix.location.data$geogen.coords,
+#'  						k = nrow(spacemix.location.data$sample.coords),
+#'  						admix.source.locs = NULL,
+#'  						option = 1)
+#' # perform Procrustes superimposition of 
+#' #  admixture locations into same frame of
+#' #  reference as the superimposition of the
+#' #  geogenetic locations onto the sampling coordinates
+#' proc.admix.coords <- spacemix.procrustes(X = spacemix.location.data$sample.coords,
+#' 						Y = spacemix.location.data$geogen.coords,
+#'  						k = nrow(spacemix.location.data$sample.coords),
+#'  						admix.source.locs = spacemix.location.data$admix.coords,
+#'  						option = 2)
+#' par(mfrow=c(1,3))
+#' 	plot(spacemix.location.data$sample.coords,
+#' 			pch=20,xlab='',ylab='',main="Sample coordinates",
+#'			col=spacemix.location.data$pop.colors)
+#' 	plot(spacemix.location.data$geogen.coords,
+#'			pch=20,xlab='',ylab='',main="Raw geogenetic and admixture coordinates",
+#'			col=spacemix.location.data$pop.colors)
+#'		points(spacemix.location.data$admix.coords,
+#'			col=spacemix.location.data$admix.colors,pch=8)
+#' 	plot(proc.geogen.coords,pch=20,xlab='',ylab='',
+#'		main="Procrustes superimposition\n of geogenetic and admixture coordinates",
+#'		col=spacemix.location.data$pop.colors)
+#'		points(proc.admix.coords,col=spacemix.location.data$admix.colors,pch=8)
+
+spacemix.procrustes <- function(X,Y,k,admix.source.locs = NULL,option){
+	if(is.null(option)){
+		stop("\nYou must specify an option of 1 or 2\n")
+	}
+	if(k != nrow(X) | k != nrow(Y) | nrow(X) != nrow(Y)){
+		stop("\nYou have mis-specified the dimensions of the matrices\n")
+	}
+	proc.obj <- shapes::procOPA(X,Y,scale=TRUE,reflect=TRUE)
+	rot.scal.locs <- proc.obj$s * Y %*% proc.obj$R
+	translation.matrix <- matrix(colMeans(X) - colMeans(rot.scal.locs),nrow=k,ncol=2,byrow=TRUE)
+	if(option==1){
+		proc.locs <- rot.scal.locs + translation.matrix
+	} else if(option==2){
+		if(is.null(admix.source.locs)){
+			stop("\nYou must specify admixture source locations for option 2.\n")
+		}
+		proc.locs <- proc.obj$s * admix.source.locs %*% proc.obj$R + translation.matrix
+	}
+	return(proc.locs)
+}
+
+get.procrustes.locations.posterior.list <- function(geographic.locations,population.coordinates.posterior){
+	if(any(is.null(population.coordinates.posterior))){
+		sampled.gen <- min(which(unlist(lapply(population.coordinates.posterior,is.null))))
+	} else {
+		sampled.gen <- length(population.coordinates.posterior)
+	}
+	geogen.coords.list <- vector(mode="list",length = sampled.gen-1)
+	admix.source.coords.list <- vector(mode="list",length = sampled.gen-1)
+	k <- nrow(geographic.locations)
+	for(i in 1:length(geogen.coords.list)){
+		geogen.coords.list[[i]] <- spacemix.procrustes(X = geographic.locations,
+														Y = population.coordinates.posterior[[i]][1:k,],
+														k = k,
+														option = 1)
+		admix.source.coords.list[[i]] <- spacemix.procrustes(X = geographic.locations,
+														Y = population.coordinates.posterior[[i]][1:k,],
+														k = k,
+														admix.source.locs = population.coordinates.posterior[[i]][(k+1):(2*k),],
+														option = 2)
+	}
+	return(list(geogen.coords.list = geogen.coords.list, admix.source.coords.list = admix.source.coords.list))
+}
+
+#' Fades a sample's color
+#' 
+#' This function fades a sample's color in proportion to its admixture proportion. 
+#' A sample with a smaller admixture proportion is represented by a fainter color. 
+#' When visualizing SpaceMix's output, it can be helpful to visualize the amount 
+#' of admixture a sample is drawing by having samples that draw small amounts of 
+#' admixture show up more faintly in figures.
+#' 
+#' @param pop.cols This is a vector of colors of length k in which each element
+#' 		gives the color in which the corresponding sample should be plotted.
+#' @param admix.proportions This is a vector of length k in which each element
+#' 		is the estimated admixture proportion in the corresponding sample.
+#' 
+#' @return This function returns a vector of faded colors, for which the 
+#' 		extent of fading is determined by the admixture proportion.
+#' 
+#' @examples
+#' 
+#' #generate example admixture proportions
+#'  admix.values <- seq(0.5,0,length.out=100)
+#' # make plotting colors
+#'  admix.cols <- fade.admixture.source.points(rep("red",100),seq(1,0,length.out=100))
+#' plot(admix.values,ylab="admix proportion",pch=19,col=admix.cols)
+
+fade.admixture.source.points <- function(pop.cols,admix.proportions){
+	faded.colors <- numeric(length(pop.cols))
+	for(i in 1:length(pop.cols)){
+		faded.colors[i] <- adjustcolor(pop.cols[i],admix.proportions[i])
+	}
+	return(faded.colors)
+}
+
+#' Plots admixture arrows
+#' 
+#' This function plots the admixture arrows, from the sources of admixture to their
+#' targets, on the geogenetic map estimated as part of a SpaceMix analysis.
+#' The width and opacity of these arrows can be proportional to their admixture
+#' proportions, which provides an intuitive visualization of the amount of admixture
+#' each sample is drawing.
+#' 
+#' @param admix.source.coords This is a k x 2 matrix of coordinates in which
+#'		the two elements of the ith row give the x-coordinate and y-coordinate
+#'		of the source admixture for sample i.
+#' @param geogen.coords This is a k x 2 matrix of coordinates in which
+#'		the two elements of the ith row give the x-coordinate and y-coordinate
+#'		of the geogenetic location of the ith sample.
+#' @param admix.proportions This is a vector of length k in which each element
+#' 		is the estimated admixture proportion in the corresponding sample.
+#' @param colors This is a vector of colors of length k in which each element
+#' 		gives the color in which the corresponding sample should be plotted.
+#' @param length This value determines the length of the edges of the arrow head
+#'		(in inches).  The default value is 0.1.
+#'
+#' @return This function plots the admixture arrows on an existing plotting window.
+#'		Its return value is invisible.
+plot.admix.arrows <- function(admix.source.coords,geogen.coords,admix.proportions,colors=NULL,length=0.1){
+	if(is.null(colors)){
+		colors <- rep("black",nrow(admix.source.coords))
+	}
+	arrows(x0 = admix.source.coords[,1],
+			y0 = admix.source.coords[,2],
+			x1 = geogen.coords[,1],
+			y1 = geogen.coords[,2],
+			lwd = admix.proportions,
+			col = colors,
+			length = length)
+	return(invisible("arrows!"))
+}
+
+load_MCMC_output <- function(MCMC.output.file){
+    tmpenv <- environment()
+	tmp <- load(MCMC.output.file,envir=tmpenv)
+	mcmc.output <- lapply(tmp,get,envir=tmpenv)
+	names(mcmc.output) <- tmp
+	return(mcmc.output)
+}
+
+get.posterior.location.matrix.from.list <- function(posterior.list,population.index){
+	post.location.matrix <- matrix(unlist(
+								lapply(posterior.list,
+									FUN=function(elem){elem[population.index,]})),
+								nrow=length(posterior.list),ncol=2,byrow=TRUE)
+	return(post.location.matrix)
+}
+
+get.credible.ellipse <- function(posterior.points,quantile){
+	fit <- MASS::cov.mve(posterior.points, quantile.used = nrow(posterior.points) * quantile)
+	points_in_ellipse <- posterior.points[fit$best,]
+	ellipse_boundary <- stats::predict(cluster::ellipsoidhull(points_in_ellipse))
+	return(ellipse_boundary)
+}
+
+plot.credible.ellipse <- function(ellipse_boundary,population.color,fading=0.3,lty=1){
+	polygon(ellipse_boundary,col=adjustcolor(population.color,fading),border=1,lty=lty)
+}
+
+#' Post-processes SpaceMix output for plotting
+#'
+#' This function post-processes the output of a SpaceMix analysis to create
+#' a list object that can be used or reference later for easy visualization 
+#' of SpaceMix results.
+#' 
+#' @param MCMC.output.file This is the full path, given as a character argument 
+#' 		(i.e., in quotes), of the MCMC_output R object generated by a SpaceMix 
+#'		analysis.
+#' @param geographic.locations This is a k x 2 matrix in which the ith row
+#'		gives the geographic coordinates (i.e., longitude and latitude) of 
+#'		the ith sample.
+#' @param name.vector This is a character vector of length k in which each 
+#'		element gives the name of the corresponding sample.
+#' @param color.vector This is a vector of colors of length k in which each element
+#' 		gives the color in which the corresponding sample should be plotted.
+#' @param quantile This value determines the size of the credible interval
+#' 		calculated for model parameters.  A value of 0.95 denotes the 95\% credible 
+#'		interval.
+#'
+#' @return This function returns a list that can be used for plotting and visualization
+#'		of SpaceMix output.  The components of this list are:
+#' \itemize{
+#' \item MCMC.output This is a list of the output of the SpaceMix analysis, 
+#'			containing all the elements of the output .Robj file.
+#' \item geographic.locations This is a k x 2 matrix in which the ith row
+#'		gives the geographic coordinates (i.e., longitude and latitude) of 
+#'		the ith sample.
+#' \item name.vector This is a character vector of length k in which each 
+#'		element gives the name of the corresponding sample.
+#' \item color.vector This is a vector of colors of length k in which each element
+#' 		gives the color in which the corresponding sample should be plotted.
+#' \item quantile=quantile This value determines the size of the credible interval
+#' 		calculated for model parameters.
+#' \item best.iter This is the index of the sampled MCMC iteration with the largest
+#'		posterior probability.  We refer to parameter estimates in that iteration as
+#'		the maximum a posteriori (MAP) estimates.
+#' \item admix.source.color.vector This is a vector of faded colors (the same as given
+#'		in \code{color.vector}), for which the extent of fading is determined by the 
+#' 		admixture proportion.  These colors, for which the opacity is proportional
+#'		to the estimated admixture proportion, are used in plotting the admixture 
+#'		sources and admixture arrows.
+#' \item k This is the number of samples in the analysis.
+#' \item MAPP.geogen.coords This is the Procrustes-transformed MAP geogenetic location 
+#'		coordinates.
+#' \item MAPP.admix.source.coords This is the Procrustes-transformed MAP admixture source 
+#'		location coordinates.
+#' \item procrustes.coord.posterior.lists This is a list of the Procrustes-transformed 
+#'		location parameter coordinates.
+#' 		\itemize{
+#' 			\item geogen.coords.list A list of length N, where I is the number of sampled
+#'					MCMC iterations.  The ith element of the list contains the Procrustes-
+#'					transformed geogenetic location coordinates in the ith sampled iteration 
+#'					of the MCMC.  As a whole, this list represents the posterior distribution 
+#'					of geogenetic location parameters for all samples.
+#' 			\item admix.source.coords.list A list of length N, where I is the number of sampled
+#'					MCMC iterations.  The ith element of the list contains the Procrustes-
+#'					transformed admixture source location coordinates in the ith sampled iteration 
+#'					of the MCMC.  As a whole, this list represents the posterior distribution 
+#'					of admixture source location parameters for all samples.
+#' 		}
+#' \item pp.geogen.location.matrices A list of length k in which the ith element is the Procrustes-
+#' 		transformed posterior distribution of geogenetic location coordinates for the ith sample.
+#' \item pp.admix.source.location.matrices A list of length k in which the ith element is the Procrustes-
+#' 		transformed posterior distribution of admixture source location coordinates for the ith sample.
+#' \item pp.geogen.ellipses A list of length k in which the ith element gives the boundaries of the 
+#' 		95\% credible ellipse of the Procrustes-transformed posterior distribution of geogenetic 
+#'		location coordinates of the ith sample.
+#' \item pp.admix.source.ellipses A list of length k in which the ith element gives the boundaries of the 
+#' 		95\% credible ellipse of the Procrustes-transformed posterior distribution of admixture source  
+#'		location coordinates of the ith sample.
+#' }
+
+make.spacemix.map.list <- function(MCMC.output.file,geographic.locations,name.vector,color.vector,quantile=0.95){
+	MCMC.output <- load_MCMC_output(MCMC.output.file)
+	best.iter <- which.max(MCMC.output$Prob)
+	k <- MCMC.output$last.params$k
+	if(is.null(color.vector)){
+		color.vector <- rep(1,k)
+	}
+	admix.source.color.vector <- fade.admixture.source.points(color.vector,rowMeans(MCMC.output$admix.proportions))
+	MAPP.geogen.coords <- spacemix.procrustes(X = geographic.locations,
+											Y = MCMC.output$population.coordinates[[best.iter]][1:k,],
+											k = k,option = 1)
+	MAPP.admix.source.coords <- spacemix.procrustes(X = geographic.locations,
+												Y = MCMC.output$population.coordinates[[best.iter]][1:k,],
+												k = k,
+												admix.source.locs = MCMC.output$population.coordinates[[best.iter]][(k+1):(2*k),],
+												option=2)
+	procrustes.coord.posterior.lists <- get.procrustes.locations.posterior.list(geographic.locations = geographic.locations,
+																				population.coordinates.posterior = MCMC.output$population.coordinates)
+	pp.geogen.location.matrices <- lapply(1:k,get.posterior.location.matrix.from.list,posterior.list=procrustes.coord.posterior.lists$geogen.coords.list)
+	pp.admix.source.location.matrices <- lapply(1:k,get.posterior.location.matrix.from.list,posterior.list=procrustes.coord.posterior.lists$admix.source.coords.list)
+	pp.geogen.ellipses <- lapply(pp.geogen.location.matrices,get.credible.ellipse,quantile)
+	pp.admix.source.ellipses <- lapply(pp.admix.source.location.matrices,get.credible.ellipse,quantile)
+	spacemix.map.list <- c(MCMC.output,
+							list(geographic.locations=geographic.locations),
+								list(name.vector=name.vector),list(color.vector=color.vector),
+								list(quantile=quantile),list(best.iter = best.iter),
+								list(admix.source.color.vector = admix.source.color.vector),
+								list(k = k),list(MAPP.geogen.coords = MAPP.geogen.coords),
+								list(MAPP.admix.source.coords = MAPP.admix.source.coords),
+								list(procrustes.coord.posterior.lists = procrustes.coord.posterior.lists),
+								list(pp.geogen.location.matrices = pp.geogen.location.matrices),
+								list(pp.admix.source.location.matrices = pp.admix.source.location.matrices),
+								list(pp.geogen.ellipses = pp.geogen.ellipses),
+								list(pp.admix.source.ellipses = pp.admix.source.ellipses))
+	return(spacemix.map.list)
+}
+
+#' Plots the output of a SpaceMix analysis
+#' 
+#' This function plots the output of a SpaceMix analysis. Users can specify
+#' whether they wish to also visualize the names of the samples, the 
+#' credible ellipses of estimated sample geogenetic and admixture source 
+#' location coordinates, as well as whether they wish to visualize the 
+#' sources of admixture at all.
+#' 
+#' @param spacemix.map.list This is the name of the list produced using the function 
+#'		\code{\link{make.spacemix.map.list}}.  This list should already be loaded into 
+#'		R's working memory.
+#' @param text This option (\code{TRUE} or \code{FALSE}) specifies whether sample 
+#'		names should be printed on the plotted figure at the locations of the MAP 
+#'		parameter estimates for each sample's geogenetic location and that of its 
+#'		admixture source location.
+#' @param ellipses This option (\code{TRUE} or \code{FALSE}) specifies whether 
+#'		bivariate credible interval ellipses should be plotted for sample geogenetic 
+#'		locations and admixture source locations.
+#' @param source.option This option (\code{TRUE} or \code{FALSE}) specifies whether 
+#'		the sources of admixture for each sample will be plotted, with accompanying 
+#'		admixture arrows.
+#' @param xlim This vector of length 2 gives the minimum and maximum x-value of the 
+#'		plotting window.  Default is NULL, in which case the \code{xlim} used will 
+#'		be the minimum and maximum credible ellipse x-coordinates.
+#' @param ylim This vector of length 2 gives the minimum and maximum y-value of the 
+#'		plotting window. Default is NULL, in which case the \code{xlim} used will 
+#'		be the minimum and maximum credible ellipse y-coordinates.
+#'
+#' @return This function plots the output of a SpaceMix analysis.  If specified, 
+#'		sample names are plotted at the MAP estimates of their geogenetic and admixture 
+#'		source locations.  Ellipses with solid margins denote credible intervals on 
+#'		the posterior distributions of sample geogenetic locations, while those with dashed 
+#'		margins denote credible intervals on the posterior distributions of sample admixture 
+#'		source locations. The return value of this function is invisible.
+#' 
+#' @examples
+#' 
+#' #load example spacemix.map.list object
+#' data(example.spacemix.map.list)
+#' 
+#' #make SpaceMix output map
+#' #	without plotting admixture sources, and with sample names plotted
+#' make.spacemix.map(example.spacemix.map.list,source=FALSE,text=TRUE)
+#' 
+make.spacemix.map <- function(spacemix.map.list,text=FALSE,ellipses=TRUE,source.option=TRUE,xlim=NULL,ylim=NULL){
+	with(spacemix.map.list,{ 
+		plot(MAPP.geogen.coords,type='n',xlim=xlim,ylim=ylim,xlab="",ylab="")
+			if(ellipses){
+				lapply(1:k,FUN=function(i){plot.credible.ellipse(pp.geogen.ellipses[[i]],color.vector[i])})
+			}
+			if(text){
+				text(MAPP.geogen.coords,col=color.vector,font=2,labels=name.vector,cex=0.7)
+			}
+			if(source.option){
+				if(ellipses){
+					lapply(1:k,FUN=function(i){plot.credible.ellipse(pp.admix.source.ellipses[[i]],admix.source.color.vector[i],fading=1,lty=2)})
+				}
+				text(MAPP.admix.source.coords,col= admix.source.color.vector,font=3,labels=name.vector,cex=0.7)
+				plot.admix.arrows(MAPP.admix.source.coords, MAPP.geogen.coords,
+									admix.proportions=admix.proportions[,best.iter],
+									colors=admix.source.color.vector,length=0.1)
+			}
+				box(lwd=2)
+	})
+	return(invisible("spacemix map!"))
+}
+
+#' Highlights specific samples in a geogenetic map
+#' 
+#' This function highlights the geogenetic locations and admixture 
+#' source locations for a subset of the samples in a geogenetic map 
+#' generated from a SpaceMix analysis. Users can specify the names of the 
+#' samples to be highlighted, as well as whether they wish to visualize the 
+#' sources of admixture for those samples.  This function should be called
+#' after a a geogenetic map has already been plotted using 
+#' \code{\link{make.spacemix.map}}
+#' 
+#' @param focal.pops This is a character vector specifying the names of the 
+#'		samples to be highlighted on the existing SpaceMix map.
+#' @param spacemix.map.list This is the name of the list produced using the function 
+#'		\code{\link{make.spacemix.map.list}}.  This list should already be loaded into 
+#'		R's working memory.
+#' @param ellipses This option (\code{TRUE} or \code{FALSE}) specifies whether 
+#'		bivariate credible interval ellipses should be plotted for sample geogenetic 
+#'		locations and admixture source locations.
+#' @param source.option This option (\code{TRUE} or \code{FALSE}) specifies whether 
+#'		the sources of admixture for each sample will be plotted, with accompanying 
+#'		admixture arrows.
+#'
+#' @return This function highlights the geogenetic locations and admixture source locations
+#' 		for a specified subset of samples. The return value of this function is invisible.
+#' 
+#' @examples
+#' 
+#' #load example spacemix.map.list object
+#' data(example.spacemix.map.list)
+#' 
+#' #make SpaceMix output map
+#' #	without plotting admixture sources, and without sample names plotted
+#' make.spacemix.map(example.spacemix.map.list,source=FALSE,text=FALSE)
+#' 
+#' #highlight two samples, without their admixture sources
+#'  query.spacemix.map(focal.pops=c("Sample_9","Sample_23"),
+#'						spacemix.map.list = example.spacemix.map.list,
+#'						ellipses=TRUE,source.option=FALSE)
+query.spacemix.map <- function(focal.pops,spacemix.map.list,ellipses=TRUE,source.option=TRUE){
+	with(spacemix.map.list,{
+		# browser()
+		focal.indices <- match(focal.pops,name.vector)
+		if(ellipses){
+			for(i in 1:length(focal.indices)){
+				plot.credible.ellipse(pp.geogen.ellipses[[focal.indices[i]]],color.vector[focal.indices[i]],fading=1)
+			}
+		}
+			if(source.option){
+				if(ellipses){
+					for(i in 1:length(focal.indices)){
+						plot.credible.ellipse(pp.admix.source.ellipses[[focal.indices[i]]], admix.source.color.vector[focal.indices[i]],fading=1,lty=2)
+					}
+				}
+				text(MAPP.admix.source.coords[focal.indices,,drop=FALSE],col=1,font=3,labels=name.vector[focal.indices])
+				arrows(	x0 = MAPP.admix.source.coords[focal.indices,1],
+						y0 = MAPP.admix.source.coords[focal.indices,2],
+						x1 = MAPP.geogen.coords[focal.indices,1],
+						y1 = MAPP.geogen.coords[focal.indices,2],
+						col= admix.source.color.vector[focal.indices[i]],
+						lwd=1,
+						length=0.1)
+			}
+			text(MAPP.geogen.coords[focal.indices,,drop=FALSE],col=1,font=2,labels=name.vector[focal.indices],cex=1)
+				box(lwd=2)
+	})
+	return(invisible("highlighted samples!"))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

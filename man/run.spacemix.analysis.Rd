@@ -5,8 +5,7 @@
 \title{Runs a SpaceMix analysis}
 \usage{
 run.spacemix.analysis(n.fast.reps, fast.MCMC.ngen, fast.model.option,
-  long.model.option, data.type, fast.likelihood.option, long.likelihood.option,
-  proj.mat.option = NULL, sample.frequencies = NULL,
+  long.model.option, data.type, sample.frequencies = NULL,
   mean.sample.sizes = NULL, counts = NULL, sample.sizes = NULL,
   sample.covariance = NULL, target.spatial.prior.scale = NULL,
   source.spatial.prior.scale = NULL, spatial.prior.X.coordinates,
@@ -23,13 +22,8 @@ run.spacemix.analysis(n.fast.reps, fast.MCMC.ngen, fast.model.option,
 
 \item{long.model.option}{The model to be used in the long run:  may be "no_movement","source","target","source_and_target".}
 
-\item{data.type}{The data type to be used.  May be "sample.covariance","sample.frequencies","counts".}
-
-\item{fast.likelihood.option}{The likelihood option to be used in the short run.  May be "wishart" or "normal_approx".}
-
-\item{long.likelihood.option}{The likelihood option to be used in the long run.  May be "wishart" or "normal_approx".}
-
-\item{proj.mat.option}{The option for the projection matrix.  Keep as NULL.}
+\item{data.type}{The data type to be used.  May be "sample.covariance","sample.frequencies","counts".
+Please see the vignette for a discussion of what these different data elements should look like.}
 
 \item{sample.frequencies}{Data to be specified if "sample.frequencies" is chosen as data.type.}
 
@@ -39,7 +33,7 @@ run.spacemix.analysis(n.fast.reps, fast.MCMC.ngen, fast.model.option,
 
 \item{sample.sizes}{Data to be specified if "counts" is chosen as data.type.}
 
-\item{sample.covariance}{Data to be specified if or "sample.covariance" is chosen as data.type.}
+\item{sample.covariance}{Data to be specified if "sample.covariance" is chosen as data.type.}
 
 \item{target.spatial.prior.scale}{The variance on the spatial prior on population locations, default is half the pairwise observed distance.}
 
@@ -52,8 +46,9 @@ run.spacemix.analysis(n.fast.reps, fast.MCMC.ngen, fast.model.option,
 \item{round.earth}{Option of whether you want to estimate locations on a plane (round.earth = FALSE) or a sphere (round.earth = TRUE).}
 
 \item{long.run.initial.parameters}{List of parameter values that can be passed directly to the long run MCMC as initial parameter values.
-The list should include values for \code{a0},\code{a1},\code{a2},\code{population.coordinates},\code{admix.proportions},
-and \code{nuggets}, and each element of the list should named for the parameter (e.g \code{list("a0" = 1.07, "a1" = 0.5, ...)})}
+The list should include values for \code{a0}, \code{a1}, \code{a2}, \code{population.coordinates}, \code{admix.proportions},
+and \code{nugget}, and each element of the list should named for the corresponding parameter
+(e.g., \code{list("a0" = 1.07, "a1" = 0.5, ...)}).}
 
 \item{k}{Number of samples.}
 
@@ -143,5 +138,36 @@ from random locations in parameter space to find a generally good area, then one
 long run from the final location in parameter space from the best short run,
 the results of which are what the user cares about.  The user can also choose
 to run only a single long analysis, for which the initial parameters may be specified.
+}
+\examples{
+# load example dataset
+data(spacemix.example.dataset)
+
+# run example analysis
+run.spacemix.analysis(n.fast.reps = 2,
+			fast.MCMC.ngen = 100,
+			fast.model.option = "source_and_target",
+			long.model.option = "source_and_target",
+			data.type = "counts",
+			sample.frequencies = NULL,
+			mean.sample.sizes = NULL,
+			counts = spacemix.dataset$allele.counts,
+			sample.sizes = spacemix.dataset$sample.sizes,
+			sample.covariance = NULL,
+			target.spatial.prior.scale = NULL,
+			source.spatial.prior.scale = NULL,
+			spatial.prior.X.coordinates = spacemix.dataset$population.coordinates[,1],
+			spatial.prior.Y.coordinates = spacemix.dataset$population.coordinates[,2],
+			round.earth = FALSE,
+			long.run.initial.parameters = NULL,
+			k = nrow(spacemix.dataset$allele.counts),
+			loci = ncol(spacemix.dataset$allele.counts),
+			ngen = 5000,
+			printfreq = 50,
+			samplefreq = 5,
+			mixing.diagn.freq = 50,
+			savefreq = 5000,
+			directory = NULL,
+			prefix = "example_run")
 }
 
