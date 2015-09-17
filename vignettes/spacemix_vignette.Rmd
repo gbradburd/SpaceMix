@@ -1,0 +1,1091 @@
+---
+title: "SpaceMix Vignette"
+author: "Gideon Bradburd"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{SpaceMix Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+<!-- render("~/Dropbox/space.mix/SpaceMix/vignettes/spacemix_vignette.Rmd") -->
+# Introduction
+SpaceMix is a statistical method that uses genome-wide polymorphism 
+data to build “geogenetic maps,” in which the distances between 
+samples reflect genetic, rather than geographic, distance.
+In the underlying model, allele frequency covariance is a decreasing 
+function of geogenetic distance, and nonlocal gene flow such as 
+admixture can be identified as anomalously strong covariance over 
+long distances. This admixture is explicitly co-estimated and 
+depicted as arrows, from the source of admixture to the recipient, 
+on the geogenetic map.
+
+This vignette will guide you through using the R package SpaceMix.
+The vignette is organized into three sections:
+
+1. Formatting Data
+
+1. Running a SpaceMix analysis
+
+1. Visualizing results
+
+# Formatting Data
+There are three different types of data that can be used to 
+initiate a SpaceMix analysis.  Below, we walk through each 
+data type and how to format it for analysis.
+
+## Using allele count data
+We assume that the data are bi-allelic SNPs genotyped at _L_ loci 
+in _K_ samples, where each sample consists of at least one genotyped 
+individual.  At each locus, the user should pick, at random, an allele
+to count, and then summarize the genotype data as the number of times 
+that allele is observed at that locus in each sample.  This process is 
+illustrated below:
+
+Our samples consist of 5 individuals.  Their genotype data at a single
+locus are as follows:
+
+| Sample | Genotype |
+|:------|:----:|
+|  Ind1  |  AA |
+|  Ind2  |  AT |
+|  Ind3  |  TT |
+|  Ind4  |  TA |
+|  Ind5  |  NN |
+
+  : Genotype data for a single locus
+
+\
+\
+
+Notice that Ind5 was not successfully genotyped at this locus.
+Now, if we choose to count the 'T' allele, we can summarize 
+these genotype data by simply counting the number of 'T' alleles
+in each individual's genotype.
+
+| Sample | Genotype |
+|:------|:----:|
+|  Ind1  |  0 |
+|  Ind2  |  1 |
+|  Ind3  |  2 |
+|  Ind4  |  1 |
+|  Ind5  |  0 |
+
+  : Allele count data at a single locus
+
+\
+\
+
+We will refer to these data as allele count data, or 
+_C~lk~_, in which the subscript _l_ indexes the locus 
+(a column in the genotype matrix) and the subscript 
+_k_ indexes the sample (a row in the genotype matrix).  
+Notice that Ind5, which was not genotyped at this locus, 
+has an allele count of 0.
+
+The user must also specify a matrix of sample sizes, which we 
+refer to as _S~lk~_.  In this matrix, the _lk_^th^ entry gives 
+the number of chromosomes genotyped at locus _l_ in sample _k_.
+Using the example dataset above, assuming each individual is 
+diploid, the corresponding sample size entries are:
+
+| Sample | Sample Size |
+|:------|:----:|
+|  Ind1  |  2 |
+|  Ind2  |  2 |
+|  Ind3  |  2 |
+|  Ind4  |  2 |
+|  Ind5  |  0 |
+
+  : Sample size data at a single locus
+
+\
+\
+
+Notice that the missing data at this locus in 
+Ind5 is denoted by a sample size of 0, as 0  
+chromosomes were successfully genotyped at this locus.
+
+This process of counting a randomly chosen allele at 
+each locus and summarizing the genotype data as allele 
+counts should be repeated for each locus in the dataset.
+
+To extend our example, imagine that our dataset consists 
+of the same 5 individuals genotyped at 10 loci:
+
+| Sample | Locus1 | Locus2 | Locus3 | Locus4 | Locus5 | Locus6 | Locus7 | Locus8 | Locus9 | Locus10 |
+|:------|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|  Ind1  | AA | AC | GG | CT | AT | NN | NN | AA | GC | AG |
+|  Ind2  | AT | AC | CG | CC | AT | GG | TC | NN | GC | GA |
+|  Ind3  | TT | AA | NN | TT | AA | TG | CT | AA | GC | GG |
+|  Ind4  | TA | CC | GG | TT | NN | TG | TT | AG | GG | GG |
+|  Ind5  | NN | CC | CG | CT | TT | TG | CC | GG | GC | AA |
+
+  : Genotype matrix
+
+\
+\
+
+We randomly choose to sample the following alleles at each locus:
+
+| Locus1 | Locus2 | Locus3 | Locus4 | Locus5 | Locus6 | Locus7 | Locus8 | Locus9 | Locus10 |
+|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+| T | A | G | C | A | T | C | A | G | G |
+
+  : Counted alleles
+
+\
+\
+
+Then, our allele counts matrix, _C~lk~_, will look like this:
+
+| Sample | Locus1 | Locus2 | Locus3 | Locus4 | Locus5 | Locus6 | Locus7 | Locus8 | Locus9 | Locus10 |
+|:------|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|  Ind1  | 0 | 1 | 2 | 1 | 1 | 0 | 0 | 2 | 1 | 1 |
+|  Ind2  | 1 | 1 | 1 | 2 | 1 | 0 | 1 | 0 | 1 | 1 |
+|  Ind3  | 2 | 2 | 0 | 0 | 2 | 1 | 1 | 2 | 1 | 2 |
+|  Ind4  | 1 | 0 | 2 | 0 | 0 | 1 | 0 | 1 | 2 | 2 |
+|  Ind5  | 0 | 0 | 1 | 1 | 0 | 1 | 2 | 0 | 1 | 0 |
+
+  : Allele counts matrix, _C~lk~_
+
+\
+\
+
+And our sample size matrix, _S~lk~_, will look like this:
+
+| Sample | Locus1 | Locus2 | Locus3 | Locus4 | Locus5 | Locus6 | Locus7 | Locus8 | Locus9 | Locus10 |
+|:------|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|  Ind1  | 2 | 2 | 2 | 2 | 2 | 0 | 0 | 2 | 2 | 2 |
+|  Ind2  | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 2 |
+|  Ind3  | 2 | 2 | 0 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+|  Ind4  | 2 | 2 | 2 | 2 | 0 | 2 | 2 | 2 | 2 | 2 |
+|  Ind5  | 0 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+
+  : Sample size matrix, _S~lk~_, where 0 denotes missing data
+
+\
+\
+
+These matrices should be in R and of class `matrix`, rather 
+than of class `data.frame`. There is an example dataset in the 
+SpaceMix package with L = 10000 and K = 30, 
+and you can take a look at it with 
+```{r allele.count.data}
+# load the example dataset and look at its elements
+require(SpaceMix)
+data(spacemix.example.dataset)
+str(spacemix.dataset)
+
+# look at the attributes of the allele counts matrix
+dim(spacemix.dataset$allele.counts)
+class(spacemix.dataset$allele.counts)
+
+# look at the first 10 loci
+spacemix.dataset$allele.counts[1:30,1:10]
+spacemix.dataset$sample.sizes[1:30,1:10]
+```
+
+These two matrices, _C~lk~_ and _S~lk~_ can then be used to 
+run a SpaceMix analysis (described in further detail below).
+
+\
+
+
+## Using sample allele frequency data
+
+A second option is to specify allele frequency data, rather than 
+allele counts and sample sizes.  As before, the user is choosing, 
+at random, an allele to track at each locus, and is providing the 
+sample frequency of that allele in each sample at each locus. 
+The estimated allele frequency at locus _l_ in sample _k_ is simply 
+_C~lk~_ / _S~lk~_.  This option may be more appropriate if the 
+genotype data are from a Pool-seq experiment (multiplexed, but not 
+barcoded by individual), so that allele frequencies may be estimated 
+from the number of reads with different alleles, rather than from 
+individual genotypes.  However, this assumes that reads are being 
+generated uniformly across all samples.
+
+The allele frequency matrix, which we call _F~lk~_, should be in R 
+and of class `matrix`, with _K_ rows (number of samples) and _L_ columns 
+(number of loci).  Missing data should be denoted with values of NaN
+(not a number), as would result if you divide the number of allele 
+counts (which is 0 at a locus for which data is missing) by a sample 
+size of 0.  Non-missing data values of the allele frequency matrix 
+should range between 0 and 1. An example of what an allele frequency 
+matrix should look like is given below:
+
+```{r allele.freq.data}
+# load the example dataset and look at its elements
+data(spacemix.example.dataset)
+str(spacemix.dataset)
+
+# Now create an example allele frequency matrix by 
+#	dividing the allele counts by the sample sizes
+allele.frequency.matrix <- spacemix.dataset$allele.counts / spacemix.dataset$sample.sizes
+
+```
+
+If specifying the allele frequency data matrix (instead of allele counts 
+and sample sizes) to run a SpaceMix analysis, the user must also provide 
+the mean sample sizes of each sample.  This data on mean sample sizes 
+should be given in the form of an R vector of length _K_, in which the _k_^th^ 
+entry gives the mean sample size, across all genotyped loci, or the _k_^th^ 
+sample.  When taking this mean, users should ignore entries for which there are 
+missing data.  For example, if the sample size matrix is:
+
+| Sample | Locus1 | Locus2 | Locus3 | Locus4 | Locus5 | Locus6 | Locus7 | Locus8 | Locus9 | Locus10 |
+|:------|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|  Ind1  | 2 | 2 | 2 | 2 | 2 | 0 | 0 | 2 | 2 | 2 |
+|  Ind2  | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 2 |
+|  Ind3  | 2 | 2 | 0 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+|  Ind4  | 2 | 2 | 2 | 2 | 0 | 2 | 2 | 2 | 2 | 2 |
+|  Ind5  | 0 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 |
+
+  : Sample size matrix, _S~lk~_, where 0 denotes missing data
+
+\
+
+then the mean sample size should be 2 for each sample.
+
+The user can calculate this quantity from a matrix of sample sizes as 
+follows:
+
+```{r mean.sample.size.data}
+# Example sample size data
+# 10 samples
+K <- 10
+# 50 loci
+L <- 50
+
+# Randomly determine a matrix of sample sizes between 0 and 10
+#	(corresponding to up to 5 diploids genotyped in each sample)
+ex.sample.sizes <- matrix(sample(c(0:10),size=500,replace=TRUE),nrow=K,ncol=L)
+
+# To calculate mean sample sizes,
+#	first replace all missing data 
+#	(entries with a 0) with NA values
+tmp.sample.sizes <- ex.sample.sizes
+tmp.sample.sizes[which(ex.sample.sizes == 0)] <- NA
+mean.sample.sizes <- rowMeans(tmp.sample.sizes,na.rm=TRUE)
+```
+
+The matrix of allele frequencies, _F~lk~_, and the vector of 
+mean sample sizes can then be used to run a SpaceMix analysis 
+(described in further detail below).
+
+\
+
+
+## Using sample allele frequency covariance data
+
+A third option is to specify a sample allele frequency 
+covariance matrix.  This matrix has a number of rows 
+and columns equal to the number of samples in the dataset,
+_K_, and the _ij_^th^ entry gives the covariance in 
+normalized sample allele frequencies between samples _i_ and _j_.
+The normalization is used to standardize the variance in 
+allele frequencies across loci, and is performed by dividing 
+the allele frequencies at a locus by 
+$$ \sqrt{\bar{f}(1-\bar{f})} $$ where $\bar{f}$ 
+is the average of the _K_ sample allele frequencies,
+weighted by mean population size.  That is, 
+$$\bar{f}_{\ell} = \frac{1}{\sum_K S_{k,\ell}} 
+\sum_K \hat{f}_{k,\ell} S_{k,\ell}$$.
+
+Below, we walk through the steps a user should take to go from 
+a sample allele frequency matrix (as described above) to the 
+normalized sample allele frequencies to the sample covariance 
+matrix that may be specified for a SpaceMix analysis.
+
+Say our allele frequency matrix, _F~lk~_, looks like this:
+
+| Sample | Locus1 | Locus2 | Locus3 | Locus4 | Locus5 | Locus6 | Locus7 | Locus8 | Locus9 | Locus10 |
+|:------|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|  Pop1  | 0.000 | 0.600 | 0.800 | 0.000 | 0.500 | 0.200 | 0.667 | 0.600 | 0.750 | 0.750 |
+|  Pop2  | 0.538 |   NaN | 0.545 | 0.500 | 0.615 | 0.643 | 0.692 | 0.667 | 0.733 | 0.214 |
+|  Pop3  | 0.409 | 0.476 | 0.545 | 0.542 | 0.409 | 0.542 | 0.708 | 0.560 | 0.474 | 0.583 |
+|  Pop4  | 0.485 | 0.545 | 0.469 |   NaN | 0.529 | 0.567 | 0.484 | 0.647 | 0.400 | 0.344 |
+|  Pop5  | 0.483 | 0.621 | 0.424 | 0.569 | 0.532 | 0.368 |   NaN | 0.534 | 0.491 | 0.492 |
+
+  : Allele frequency matrix, _F~lk~_, where NaN denotes missing data
+
+\
+\
+
+And our sample size matrix, _S~lk~_, looks like this
+(notice that the average sample size is highly variable 
+across sampled populations):
+
+| Sample | Locus1 | Locus2 | Locus3 | Locus4 | Locus5 | Locus6 | Locus7 | Locus8 | Locus9 | Locus10 |
+|:------|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|  Pop1  |  4 |  5 |  5 |  5 |  4 |  5 |  3 |  5 |  4 |  4 |
+|  Pop2  | 13 |  0 | 11 | 12 | 13 | 14 | 13 | 12 | 15 | 14 |
+|  Pop3  | 22 | 21 | 22 | 24 | 22 | 24 | 24 | 25 | 19 | 24 |
+|  Pop4  | 33 | 33 | 32 |  0 | 34 | 30 | 31 | 34 | 30 | 32 |
+|  Pop5  | 58 | 58 | 59 | 58 | 62 | 57 |  0 | 58 | 55 | 59 |
+
+  : Sample size matrix, _S~lk~_, where 0 denotes missing data
+
+\
+\
+
+We want to get $\bar{f}$ for each locus, then normalize the
+allele frequencies at each locus by $\sqrt{\bar{f}(1-\bar{f})}$, 
+then calculate the covariance of these normalized sample allele 
+frequencies.
+
+So, first we want to calculate $\bar{f}$ for each locus.  Recall 
+that this is a mean allele frequency at a locus, where the mean is 
+weighted by the sample size in each sample.  See the function below 
+that calculates $\bar{f}_l$ at locus $l$.
+
+```{r sample.cov.data.pt1}
+# The function takes as its arguments a matrix of allele frequencies 
+# 	with _K_ rows (number of samples) and _L_ columns (number of loci) 
+#	and a matrix of sample sizes of the same dimensions.
+calculate.mean.sample.freq <- function(frequencies,sample.sizes){
+	frequencies[is.na(frequencies)] <- 0
+	weighted.sample.frequencies <- colSums(frequencies * sample.sizes)/colSums(sample.sizes)
+	return(weighted.sample.frequencies)
+}
+
+# and a demonstration:
+sample.sizes <- matrix(c(4,5,5,5,4,5,3,5,4,4,
+						 13,0,11,12,13,14,13,12,15,14,
+						 22,21,22,24,22,24,24,25,19,24,
+						 33,33,32,0,34,30,31,34,30,32,
+						 58,58,59,58,62,57,0,58,55,59),
+						 nrow=5,ncol=10,byrow=TRUE)
+frequencies <- matrix(c(0.000,0.600,0.800,0.000,0.500,0.200,0.667,0.600,0.750,0.750,
+						0.538,NaN,0.545,0.500,0.615,0.643,0.692,0.667,0.733,0.214,
+						0.409,0.476,0.545,0.542,0.409,0.542,0.708,0.560,0.474,0.583,
+						0.485,0.545,0.469,NaN,0.529,0.567,0.484,0.647,0.400,0.344,
+						0.483,0.621,0.424,0.569,0.532,0.368,NaN,0.534,0.491,0.492),
+						nrow=5,ncol=10,byrow=TRUE)
+# get the weighted mean frequencies at each locus
+calculate.mean.sample.freq(frequencies,sample.sizes)
+
+# compare to the unweighted mean frequencies
+colMeans(frequencies,na.rm=TRUE)
+
+# but also note that these functions would return 
+#	the same value if the sample sizes were all the same
+calculate.mean.sample.freq(frequencies[,1,drop=FALSE],matrix(1000,nrow=5,ncol=1))
+```
+
+As an example, notice that the sample size-weighted mean 
+is higher than the naive mean frequency at locus 1, 
+because the lowest allele frequency (in Population 1) is 
+also in the sample with the smallest sample size, and its 
+low value gets downweighted in the calculation of the mean.
+
+Also note that the function could work the same if the 
+user did not have a full matrix of sample sizes across 
+all loci, and instead had just the mean sample size for 
+each sample across all loci.  In that case, calculating 
+the sample size-weighted mean would look like this:
+
+```{r sample.cov.data.pt2}
+# start with a vector of mean sample sizes across samples
+#	(this is calculated from the sample.sizes matrix in
+#	the example above using the following command:
+#		rowSums(sample.sizes)/ncol(sample.sizes))
+mean.sample.sizes <- c(4.4,11.7,22.7,28.9,52.4)
+
+# now calculate the sample size-weighted mean
+# 	which is quite similar to the sample size-weighted 
+#	mean with the actual sample size data at that locus.
+
+calculate.mean.sample.freq(frequencies[,1],matrix(mean.sample.sizes,nrow=5,ncol=1))
+
+```
+
+Now we have covered how to calculate the sample size-
+weighted mean allele frequency at a locus ($\bar{f}). 
+Next, we cover how to normalize the variance of the 
+frequencies across loci using these means.
+
+```{r sample.cov.data.pt3}
+# First, define a normalizing function:
+normalize.allele.freqs <- function(frequencies,sample.sizes){
+	mean.freqs <- calculate.mean.sample.freq(frequencies,sample.sizes)
+	mean.freqs.mat <- matrix(mean.freqs,
+								nrow=nrow(frequencies),
+								ncol=ncol(frequencies),
+								byrow=TRUE)
+	normalized.freqs <- frequencies/sqrt(mean.freqs.mat * (1-mean.freqs.mat))
+	return(normalized.freqs)
+}
+
+# Now take it out for a spin:
+normalize.allele.freqs(frequencies[,1,drop=FALSE],sample.sizes[,1,drop=FALSE])
+
+# And we can apply this normalization step to a whole matrix 
+#	of allele frequencies
+normalized.allele.freqs <- normalize.allele.freqs(frequencies,sample.sizes)
+
+# Or, alternatively, if we only have a vector of mean 
+#	sample sizes, we can use
+mean.sample.size.mat <- matrix(mean.sample.sizes,nrow=5,ncol=10)
+normalized.allele.freqs <- normalize.allele.freqs(frequencies,
+													sample.sizes=mean.sample.size.mat)
+
+```
+
+Now, we have specified how to get $\bar{f}$ for each locus, and 
+also how to normalize the allele frequencies at each locus by 
+$\sqrt{\bar{f}(1-\bar{f})}$, and finally we cover how to calculate 
+the sample covariance of these normalized allele frequencies.
+
+```{r sample.cov.data.pt4}
+# Start with the normalized sample allele frequencies
+#	and ensure that the number of rows of this matrix 
+#	is equal to the number of samples in your dataset,
+#	which, in this example, is 5.
+nrow(normalized.allele.freqs) == 5
+
+# Once we have ensured this, we can simply calculate 
+#	the pairwise covariance
+sample.cov <- cov(t(normalized.allele.freqs),use="pairwise.complete.obs")
+sample.cov
+```
+
+Notice that we used the option "pairwise.complete.obs". When this option 
+is specified, the covariance between two samples is calculated across all 
+the loci for which both have no missing data. Crucially, missing data in 
+a sample only incurs _pairwise_ deletion of data in comparisons involving 
+that sample, rather than _listwise_ deletion of data across all samples. 
+To compare, see what happens when we do not specify that option.
+
+```{r sample.cov.data.pt5}
+# Calculate the sample covariance without protecting 
+#	against missing data values
+sample.cov <- cov(t(normalized.allele.freqs))
+sample.cov
+
+```
+
+As with the allele frequency matrix described above, if you choose 
+to specify the allele frequency covariance matrix when running your 
+SpaceMix analysis, you must also specify a vector of mean sample 
+sizes for your samples.
+
+\
+
+
+## Metadata
+
+We also assume that there are geographic coordinates 
+associated with each sample. These data should be prepared 
+in the form of a two-column matrix (longitude and latitude) 
+with a number of rows equal to the number of samples in the 
+dataset.  For example:
+
+```{r geo.sampling, fig.width=7, fig.height=3.5}
+# Simulating random sampling points of longitude and latitude
+long <- runif(10,-180,180)
+lat <- runif(10,-90,90)
+
+# Format those sampling points into a matrix
+geo.coords <- cbind(long,lat)
+
+# Take a look at the coordinates to make sure 
+# 	there are no errors
+geo.coords
+class(geo.coords)
+require(maps)
+map(mar=rep(0.1,4))
+points(geo.coords,pch=19,col="red")
+box(lwd=2)
+```
+
+\
+
+
+Note that having geographic sampling coordinates for each 
+sample is not a requirement!  If, for example, the genotyped 
+samples were of unknown provenance, or if the user simply 
+doesn't want to specify the geographic coordinates associated 
+with each sample, SpaceMix can still run.  We discuss this point 
+further in "Running a SpaceMix analysis" below.
+
+\
+
+
+# Running a SpaceMix analysis
+
+A SpaceMix analysis entails running a Markov chain Monte Carlo (MCMC) 
+algorithm. A thorough discussion of MCMC is beyond the scope of this 
+vignette.  Interested users should check out Gilks _et al._ (1996) [^gilks], 
+or another intro to MCMC.
+
+[^gilks]: Gilks, W.R. and Richardson, S. and Spiegelhalter, D.J. 
+	Markov Chain Monte Carlo in Practice. Chapman & Hall/CRC. 1996.
+
+The function `run.spacemix.analysis` runs the SpaceMix analysis. 
+This vignette is designed to be used _in tandem with_ the documentation 
+for that function, which can be viewed using `help(run.spacemix.analysis)`.
+Users may find it helpful to have the vignette open alongisde the help 
+documentation.
+
+A SpaceMix analysis has two components:
+
+1. First, the function runs a user-specified number of 
+"fast runs," (specified using the `n.fast.reps` option in 
+`run.spacemix.analysis`). These are short MCMC runs designed 
+to do preliminary explorations of the parameter space and 
+help the subsequent analyses. Their output is put into "fast_run"
+directories, which are numbered sequentially.  These preliminary 
+analyses are not necessary (users may go straight to the "Long Run" 
+by specifying `n.fast.reps=0`), but they tend to help the longer 
+run mix and converge better.
+
+1. Second, a "Long Run" starts from the location in parameter 
+space at the last iteration of the best fast run (designated the 
+"Best Run").  The output of the "Long Run" MCMC is put into a 
+"Long Run" directory.
+
+Users must specify the number of generations for both the 
+"fast runs" (`fast.MCMC.ngen`) and the "Long Run" (`ngen`), 
+as well as the frequency with which the "Long Run" chain is 
+sampled (`samplefreq`).
+
+\
+
+
+## Model options
+
+SpaceMix's inference algorithm may be used to estimate the parameters of 
+any of the following models:
+
+1. population locations are fixed, and they do not draw any admixture; 
+
+1. population locations are estimated, but not admixture; 
+
+1. populations may draw admixture, but their own locations are fixed; or
+
+1. population locations and admixture are both estimated.  
+
+Although we anticipate most empirical researchers will be interested 
+in the joint inference of a geogenetic map with admixture (Model 4), 
+we have presented these models separately, as we believe each have 
+their own utility.  Model 1 and Model 3 can each be used to infer 
+landscapes of allele frequencies, upon which genotyped individuals 
+can be probabilistically placed, following Wasser _et al._ (2004) [^wasser].
+This application may be useful to determine the geographic origin of 
+potentially contraband biological samples (e.g., ivory), or the most 
+likely source of museum specimens missing sampling metadata.  Model 3 
+has the potential to improve the performance of these spatial assignment 
+methods over Model 1, as the inclusion of admixture in the model may 
+allow for more accurate inference of allele frequency surfaces.  
+Model 2 directly parallels Principal Component Analysis, and could also 
+be used in a model comparison framework with Model 4 to formally test 
+for the presence of admixture in the sampled dataset.
+
+[^wasser]: Samuel K Wasser, Andrew M Shedlock, Kenine Comstock, Elaine Ostrander, 
+	Benezeth Mutayoba, and Matthew Stephens. Assigning African elephant DNA 
+	to geographic region of origin: Applications to the ivory trade. 
+	PNAS, 101(41): 14847–52, 2004. 
+
+## Spatial priors
+
+Under the assumption that the data show a pattern of 
+Isolation by Distance (IBD), our prior belief is that 
+the geogenetic map of the samples will be similar to the 
+geographic map of the samples.  Following from this belief, 
+the default model is to place a prior on the geogenetic 
+location parameter for each sample that is centered on the 
+geographic sampling location (i.e., long and lat) of that 
+sample.  The variance of that prior may be specified by the user 
+(a higher variance decreases the strength of the prior). 
+
+To parameterize these priors, the user must specify a vector 
+of longitude coordinates (`spatial.prior.X.coordinates`) 
+and latitude coordinates (`spatial.prior.Y.coordinates`), both 
+of length equal to the number of samples in the dataset.
+
+As mentioned above, if the user does not have, or does not 
+wish to specify, geographic coordinates for all or some of the 
+samples in the dataset, she may use randomly or arbitrarily 
+chosen longitude and latitude coordinates instead.
+ 
+Below, we give examples of how to run a SpaceMix analysis under 
+different scenarios.
+
+```{r ex.SpaceMix.run.1, eval=FALSE}
+# EXAMPLE 1
+
+# First, load data object
+data(spacemix.example.dataset)
+
+# Data option: allele counts and sample sizes
+# Fast Model option: estimating geogenetic locations
+# Long Model option: estimating geogenetic locations and 
+#					 admixture source locations
+# Spatial priors: default variance,
+#					observed geographic sampling locations
+run.spacemix.analysis(n.fast.reps = 10,
+						fast.MCMC.ngen = 1e5,
+						fast.model.option = "target",
+						long.model.option = "source_and_target",
+						data.type = "counts",
+						sample.frequencies=NULL,
+						mean.sample.sizes=NULL,
+						counts = spacemix.dataset$allele.counts,
+						sample.sizes = spacemix.dataset$sample.sizes,
+						sample.covariance=NULL,
+						target.spatial.prior.scale=NULL,
+						source.spatial.prior.scale=NULL,
+						spatial.prior.X.coordinates = spacemix.dataset$population.coordinates[,1],
+						spatial.prior.Y.coordinates = spacemix.dataset$population.coordinates[,2],
+						round.earth = FALSE,
+						long.run.initial.parameters=NULL,
+						k = nrow(spacemix.dataset$allele.counts),
+						loci = ncol(spacemix.dataset$sample.sizes),
+						ngen = 1e6,
+						printfreq = 1e2,
+						samplefreq = 1e3,
+						mixing.diagn.freq = 50,
+						savefreq = 1e5,
+						directory=NULL,
+						prefix = "example_run1")
+```
+
+The code block above specifies an analysis in which the user is 
+running 10 initial fast runs, each for 100,000 MCMC iterations, 
+using a model in which only geogenetic locations for the samples are 
+being estimated.  The user is specifying allele count and sample size 
+data, and is using the true geographic sampling coordinates as the 
+means of the spatial priors on geogenetic locations.  The long 
+MCMC analysis is being run for 1,000,000 iterations, sampling the 
+chain every 1,000 iterations, printing updates (sampled iteration 
+and posterior probability) to the screen every 100 iterations, and 
+saving the model output every 100,000 iterations.  In addition, 
+the long run is estimating both geogenetic sampling locations and 
+admixture source locations, and distances between locations are being 
+estimated on a flat plane, rather than on a globe.
+
+```{r ex.SpaceMix.run.2, eval=FALSE}
+# EXAMPLE 2
+
+# First, load data object
+data(spacemix.example.dataset)
+
+# Next, make allele frequencies and mean sample size objects
+allele.frequencies <- spacemix.dataset$allele.counts / spacemix.dataset$sample.sizes
+tmp.sample.sizes <- spacemix.dataset$sample.sizes
+tmp.sample.sizes[which(spacemix.dataset$sample.sizes == 0)] <- NA
+mean.sample.sizes <- rowMeans(tmp.sample.sizes,na.rm=TRUE)
+
+# Data option: allele frequencies and mean sample sizes
+# Fast Model option: estimating geogenetic locations and 
+#					 admixture source locations
+# Long Model option: estimating geogenetic locations and 
+#					 admixture source locations
+# Spatial priors: default variance,
+#					random locations for sampling coordinates
+run.spacemix.analysis(n.fast.reps = 10,
+						fast.MCMC.ngen = 1e5,
+						fast.model.option = "source_and_target",
+						long.model.option = "source_and_target",
+						data.type = "sample.frequencies",
+						sample.frequencies = allele.frequencies,
+						mean.sample.sizes = mean.sample.sizes,
+						counts = NULL,
+						sample.sizes = NULL,
+						sample.covariance=NULL,
+						target.spatial.prior.scale=NULL,
+						source.spatial.prior.scale=NULL,
+						spatial.prior.X.coordinates = runif(nrow(spacemix.dataset$allele.counts),-180,180),
+						spatial.prior.Y.coordinates = runif(nrow(spacemix.dataset$allele.counts),-90,90),
+						round.earth = TRUE,
+						long.run.initial.parameters=NULL,
+						k = nrow(allele.frequencies),
+						loci = ncol(allele.frequencies),
+						ngen = 1e6,
+						printfreq = 1e2,
+						samplefreq = 1e3,
+						mixing.diagn.freq = 50,
+						savefreq = 1e5,
+						directory=NULL,
+						prefix = "example_run2")
+```
+The code block above specifies an analysis in which the user is 
+running 10 initial fast runs, each for 100,000 MCMC iterations, 
+using a model in which both geogenetic locations for the samples 
+and admixture source locations are being estimated.  The user is 
+specifying frequency and mean sample size data, and is using 
+randomly generated coordinates as the means of the spatial priors 
+on geogenetic locations.  The long MCMC analysis is being run for 
+1,000,000 iterations, sampling the chain every 1,000 iterations, 
+printing updates (sampled iteration and posterior probability) 
+to the screen every 100 iterations, and saving the model output 
+every 100,000 iterations.  In addition, the long run is estimating 
+both geogenetic sampling locations and admixture source locations, 
+and distances between locations are being estimated on a globe.
+
+```{r ex.SpaceMix.run.3, eval=FALSE}
+# EXAMPLE 3
+
+# First, load data object
+data(spacemix.example.dataset)
+
+# Next, calculate sample covariance of normalized allele frequencies
+allele.frequencies <- spacemix.dataset$allele.counts / spacemix.dataset$sample.sizes
+normalized.allele.freqs <- normalize.allele.freqs(allele.frequencies,spacemix.dataset$sample.sizes)
+sample.cov <- cov(t(normalized.allele.freqs))
+
+# And get the mean sample sizes
+tmp.sample.sizes <- spacemix.dataset$sample.sizes
+tmp.sample.sizes[which(spacemix.dataset$sample.sizes == 0)] <- NA
+mean.sample.sizes <- rowMeans(tmp.sample.sizes,na.rm=TRUE)
+
+# Now, generate a list of parameter values at which to initiate 
+#	the analysis
+initial.param.vals <- list("a0" = 0.9,
+					 "a1" = 1.3,
+					 "a2" = 0.5,
+					 "population.coordinates" = rbind(spacemix.dataset$population.coordinates,
+					 						   matrix(runif(60,1,9),nrow=30,ncol=2)),
+					 "admix.proportions" = rep(0.01,30),
+					 "nugget" = rep(0.1,30))
+# Data option: sample normalized allele frequency covariance 
+#				and mean sample sizes
+# Fast Model option: no fast runs
+# Long Model option: estimating geogenetic locations and 
+#					 admixture source locations
+# Specifying initial parameter values for the long run
+# Spatial priors: default variance,
+#					random locations for sampling coordinates
+# 
+run.spacemix.analysis(n.fast.reps = 0,
+						fast.MCMC.ngen = 0,
+						fast.model.option = "source_and_target",
+						long.model.option = "source_and_target",
+						data.type = "sample.covariance",
+						sample.frequencies = NULL,
+						mean.sample.sizes = mean.sample.sizes,
+						counts = NULL,
+						sample.sizes = NULL,
+						sample.covariance = sample.cov,
+						target.spatial.prior.scale=NULL,
+						source.spatial.prior.scale=NULL,
+						spatial.prior.X.coordinates = runif(nrow(spacemix.dataset$allele.counts),-180,180),
+						spatial.prior.Y.coordinates = runif(nrow(spacemix.dataset$allele.counts),-90,90),
+						round.earth = TRUE,
+						long.run.initial.parameters = initial.param.vals,
+						k = nrow(sample.cov),
+						loci = ncol(allele.frequencies),
+						ngen = 1e6,
+						printfreq = 1e2,
+						samplefreq = 1e3,
+						mixing.diagn.freq = 50,
+						savefreq = 5e4,
+						directory=NULL,
+						prefix = "example_run3")
+```
+The code block above specifies an analysis in which the user is 
+running no initial fast runs.  The user is specifying the sample 
+normalized  and mean sample size data, and is using randomly 
+generated coordinates as the means of the spatial priors 
+on geogenetic locations.  The long MCMC analysis is being run for 
+1,000,000 iterations, sampling the chain every 1,000 iterations, 
+printing updates (sampled iteration and posterior probability) 
+to the screen every 100 iterations, and saving the model output 
+every 100,000 iterations.  The long run is estimating 
+both geogenetic sampling locations and admixture source locations, 
+and distances between locations are being estimated on a globe. The 
+long run is also being initiated from user-specified coordinates in 
+parameter space.
+
+
+# Visualizing results
+
+Below, we cover three aspects of visualizing the results of a SpaceMix 
+analysis: MCMC diagnosis, geogenetic map-making, and assessing model 
+adequacy.
+
+\
+
+## Evaluating MCMC performance
+As noted above, a thorough discussion of MCMC inference methods is 
+beyond the scope of this vignette. However, we briefly present some 
+graphical tools for assessing MCMC performance below, along with a 
+short discussion of what users should keep an eye out for in their 
+runs.
+
+### Trace plots
+A trace plot is a basic visual tool for assessing MCMC mixing. 
+If the chain is mixing well, the trace plot will resemble a 
+"fuzzy caterpillar." If the trace plot has not plateaued, it 
+is an indication that the chain has not converged on the stationary 
+posterior distribution, and must be run longer. If the trace plot 
+of a parameter exhibits high autocorrelation, the user may wish to 
+"thin" the chain by decreasing the frequency with which the chain 
+is sampled (option `samplefreq` in `run.spacemix.analysis`). 
+If the chain appears to be bouncing between areas of "fuzzy 
+caterpillar-dom," it may be an indication of a multi-modal 
+likelihood surface. Below, we show some example trace plots 
+from a SpaceMix analysis:
+
+```{r trace.plots, fig.width=7, fig.height=3.5}
+# First, load the example data object
+data(example.SpaceMix.output)
+
+# Trace plot of posterior probability over the MCMC
+plot(ex.output$Prob,xlab="MCMC iterations",ylab="value",
+	main="Posterior probability trace plot",type='l')
+
+# Trace plots of alpha parameters of the spatial covariance function
+matplot(t(ex.output$nugget),type='l',
+			xlab="MCMC iterations",ylab="Parameter value",
+			main="Trace plot of nugget parameters")
+```
+
+### Joint marginal plots
+Visualizations of the joint marginal distributions allow users to 
+assess how well the MCMC is mixing, and potentially diagnose instances 
+of non-identifiability in the model. Strong linear trends in the joint 
+marginal, or visible "ridges" in the likelihood surface, may be indicative 
+of parameter non-identifiability, in which multiple combinations of values 
+of these two parameters provide equally reasonable fits to the data.
+
+```{r joint.marginals, fig.width=5, fig.height=5, fig.align='center'}
+
+# Joint marginal plot of a0 and a1
+#	colored by where in the MCMC these 
+#	parameters took their values
+plot(ex.output$a0,ex.output$a1,xlab="a0",ylab="a1",
+	main="Joint marginal of a0 and a1",pch=20,
+	col=adjustcolor(rainbow(1000,start=4/6,end=6/6),0.3))
+legend(x="bottomright",pch=19,cex=0.8,
+		col=rainbow(1000,start=4/6,end=6/6)[c(1,500,1000)],
+		legend=c("Sampled MCMC iteration 1",
+				 "Sampled MCMC iteration 500",
+				 "Sampled MCMC iteration 1000"))
+
+```
+
+### Acceptance rate plots
+SpaceMix implments an adaptive MCMC, in which the size of the proposed 
+moves on each parameter is a function of the acceptance rate for that 
+parameter over a sliding window (specified by `mixing.diagn.freq` in 
+`run.spacemix.analysis`).  SpaceMix is aiming for an acceptance rate of 
+44%; higher and lower values may decrease the efficiency of the MCMC 
+and potentially increase the autocorrelation between samples. If the 
+acceptance rate has not plateaued by the end of an analysis, it may be 
+an indication that the chain is still "going somewhere" in parameter space, 
+and the user may wish to perform subsequent analyses.
+
+```{r acceptance.rates, fig.width=7, fig.height=3.5}
+# First, load the example data object
+data(example.SpaceMix.output)
+
+# Acceptance rate of a0 over the course of the 
+#	MCMC analysis
+plot(ex.output$accept_rates$a0_accept_rate,
+		xlab="MCMC iterations",ylab="Acceptance rate",
+		main="Acceptance rate of a0",type='l',
+		ylim=c(0.35,0.6))
+	abline(h=0.44,col="gray",lty=2)
+
+# Acceptance rates of nugget parameters over the 
+#	course of the MCMC analysis
+matplot(t(ex.output$accept_rates$nugget_accept_rate),
+			xlab="MCMC iterations",ylab="Acceptance rate",
+			main="Acceptance rates of nuggets",type='l',
+			ylim=c(0.3,0.7))
+	abline(h=0.44,col="gray",lty=2)
+```
+
+### Evaluating model adequacy
+In addition to evaluating MCMC performance, it is also important 
+to evaluate model adequacy, the ability of the model to describe 
+the data. There are many ways to do this; below we outline two 
+quick approaches for visually assessing model adequacy.
+
+```{r model.adequacy, fig.width=6, fig.height=5, fig.align='center'}
+# first, load the standardized (mean-centered and normalized)
+#	allele frequency data object.  This object, which is the 
+#   "MCN.frequencies.list" (Mean Centered and Normalized) is 
+#	saved in the Long Run directory, and is generated if the 
+#	user has specified either allele count or allele frequeny 
+#	data. 
+#	Note that it is not generated if the user has specified the 
+#	sample covariance.
+
+data(example.model.adequacy.RData)
+
+# Now, calculate the sample covariance from the mean centered 
+# 	and normalized sample allele frequencies.
+	sample.covariance <- cov(t(MCN.frequencies.list$mean.centered.normalized.sample.frequencies),
+								use="pairwise.complete.obs")
+
+# Next, load the example SpaceMix output object
+data(example.SpaceMix.output)
+
+# Create a matrix that will perform a mean-centering 
+#	on the parametric covariance matrix
+# Then, mean-center the parametric ovariance matrix.
+	k <- nrow(MCN.frequencies.list$mean.centered.normalized.sample.frequencies)
+	MC.matrix <- diag(k) - matrix(1/ex.output$last.params$inv.mean.sample.sizes / 
+									(sum(1/ex.output$last.params$inv.mean.sample.sizes)),
+										nrow=k,ncol=k,byrow=TRUE)
+								
+	MC.parametric.covariance <- (MC.matrix) %*% 	
+									ex.output$last.params$admixed.covariance %*% 
+									t(MC.matrix)
+
+# Finally, compare the sample covariance to the parametric
+#	covariance.  Ideally, there will be a very tight correspondence 
+#	between the data and the model.  If there is not, it may 
+#	be an indication either that the MCMC has not converged on 
+#	the stationary distribution or that the process that generated 
+#	the data is only poorly approximated by SpaceMix's model.
+
+# The sample and parametric covariances can be plotted 
+#	against each other (if model fit is good they should 
+#	fall on the x=y red line)
+index.matrix <- upper.tri(sample.covariance,diag=TRUE)
+plot(sample.covariance[index.matrix], 
+	MC.parametric.covariance[index.matrix],
+	col=adjustcolor("black",0.3),pch=20,
+	xlab="Sample covariance",
+	ylab="Parametric covariance",
+	main="Model adequacy:\n matrix comparison")
+	abline(0,1,col="red")
+
+# Or the patterns of decay of covariance with 
+#	geographic distance can be compared between 
+#	the data and the model.
+plot(ex.output$last.params$D[1:k,1:k][index.matrix], 
+		sample.covariance[index.matrix],
+		pch=19,col="black",
+		xlab="geogenetic distance",
+		ylab="covariance",
+		main="Model adequacy:\n IBD patterns")
+		points(ex.output$last.params$D[1:k,1:k][index.matrix], 
+				MC.parametric.covariance[index.matrix],col="red",pch=20)
+		legend(x="topright",pch=19,col=c(1,2),
+				legend=c("observed","model estimate"))
+				
+# note, this can also be applied over the posterior distribution 
+#	of parametric covariances, to visualize fit over the whole MCMC
+
+```
+
+\
+
+
+## Making geogenetic maps
+
+The primary output of a SpaceMix analysis is a geogenetic map, 
+in which distances between sample locations reflect genetic, 
+rather than geographic.  These maps are designed to be intuitive, 
+but also information-rich, and users may wish to find their own 
+balance between information density and intuitiveness.  Below, 
+we show examples using a few helper functions included in the 
+SpaceMix package.  However, for users wishing to design their 
+own visualization functions, a good starting point may be to 
+examine the code of the functions used below.
+
+
+The first step in making a geogenetic map is to generate a list 
+object that can be used or reference later for easy visualization 
+of SpaceMix results.
+
+Because this function takes as its argument the path of the output 
+file produced in a SpaceMix analysis, the code immediately below 
+is not evaluated, and is included solely as an example.
+
+```{r example.map.list, eval=FALSE}
+# Say that we have 30 samples from a regular grid
+population.coordinates <- matrix(c(1,1,1,1,1,3,3,3,3,3,5,5,5,5,5,
+									7,7,7,7,7,9,9,9,9,9,11,11,11,11,11,
+									1,3,5,7,9,1,3,5,7,9,1,3,5,7,9,
+									1,3,5,7,9,1,3,5,7,9,1,3,5,7,9),
+								nrow=30,ncol=2)
+# Now generate a vector of sample names
+sample.names <- unlist(lapply(1:30,function(i){sprintf("Sample_%s",i)}))
+
+# And generate a vector of sample colors
+rainbow(n=30,start=4/6,end=6/6)[as.numeric(cut(population.coordinates[,1],30))]
+
+# And now generate a sample map list using a 95% 
+#	credible interval on parameter estimates
+example.spacemix.map.list <- make.spacemix.map.list(MCMC.output.file = "~/MY_PATH/example_MCMC_output1.Robj",
+								geographic.locations = population.coordinates,
+								name.vector = sample.names,
+								color.vector = sample.colors,
+	⁃								quantile=0.95)
+```
+
+Now, using this list, we can make a geogenetic map
+```{r geogenetic.maps, fig.width=7, fig.height=6, fig.align='center'}
+# load the example map list generated using the code 
+#	block above (with a real path for the output object
+data(example.spacemix.map.list)
+
+# Now we generate a map of the output showing sample names 
+#	at the locations of the maximum a posteriori (MAP) 
+#	geogenetic location parameter estimates
+make.spacemix.map(spacemix.map.list = example.spacemix.map.list,
+				text=TRUE,
+				ellipses=FALSE,
+				source.option=FALSE)
+
+# Now, to visualize uncertainty in location parameter estimates, 
+#	we generate a map of the output showing 95% credible
+#	ellipses for the geogenetic locations of all samples 
+#	and plotting sample names at the locations of the 
+#	maximum a posteriori (MAP) geogenetic location parameter
+#	estimates
+make.spacemix.map(spacemix.map.list = example.spacemix.map.list,
+				text=TRUE,
+				ellipses=TRUE,
+				source.option=FALSE)
+
+# Notice that the figure is cut off a little bit, 
+#	so we can tweak that to make it nicer
+make.spacemix.map(example.spacemix.map.list,
+				source.option=TRUE,
+				text=TRUE,xlim=c(0.5,12),ylim=c(0,10))
+
+# Now, to visualize the sources of admixture, we can plot 
+#	those as well
+make.spacemix.map(example.spacemix.map.list,
+				source.option=TRUE,
+				text=TRUE,xlim=c(0.5,12),ylim=c(0,10))
+
+# This map looks like a bit of a mess, because even though
+#	most samples are drawing negligible amounts of admixture,
+#	they're all drawing SOME admixture, so they all get plotted 
+#	and the output is difficult to visually interpret.
+#
+# To do a better job, we can be selective about which admixutre 
+#	sources we highlight using the `query.spacemix.map` function
+make.spacemix.map(example.spacemix.map.list,
+				source.option=FALSE,
+				text=FALSE,xlim=c(0,13),ylim=c(-3,11))
+
+# Now, we just highlight the geogenetic location for Sample 9, 
+#	as well as the location of its source of admixture, which 
+#	is plotted in italics with a dashed border around its 95% 
+#	credible ellipse.
+query.spacemix.map(focal.pops=c("Sample_9"),
+						spacemix.map.list = example.spacemix.map.list,
+						ellipses=TRUE,source.option=TRUE)
+```
+
+\
+
+
+## Contact
+Hopefully you found this vignette helpful!  If you have further questions 
+you can contact gbradburd@ucdavis.edu.  However, before you email, please 
+check to make sure that the answer to your question is not in this vignette 
+or the help files for the SpaceMix package.
+
+
+

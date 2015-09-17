@@ -343,7 +343,8 @@ curate.frequency.data <- function(sample.frequencies){
 	k <- nrow(sample.frequencies)
 	fixed.alleles <- c(which(colSums(sample.frequencies)==0),which(colSums(sample.frequencies)==k))
 	na.loci <- which(is.na(sample.frequencies),arr.ind=TRUE)[,2]
-	loci.to.drop <- unique(c(fixed.alleles,na.loci))
+	missing.data <- which(!is.finite(sample.frequencies),arr.ind=TRUE)[,2]
+	loci.to.drop <- unique(c(fixed.alleles,na.loci,missing.data))
 	if(sum(loci.to.drop) > 0){	
 		sample.frequencies <- sample.frequencies[,-loci.to.drop]
 	}
@@ -1073,7 +1074,7 @@ MCMC <- function(model.option,
 				ngen,
 				printfreq,
 				samplefreq,
-				mixing.diagn.freq,
+				mixing.diagn.freq = 50,
 				savefreq,
 				directory=NULL,
                 prefix=""){
@@ -1339,9 +1340,10 @@ query.MCMC.output <- function(MCMC.output,param.names=NULL,last.param.names=NULL
 #' @param k Number of samples.
 #' @param loci Number of loci.
 #' @param ngen Number of MCMC gnereations for the long MCMC.
-#' @param printfreq Frequency with which updates are printed.
+#' @param printfreq Frequency with which updates are printed.  The updates consist of the current MCMC iteration followed by the posterior probability.
 #' @param samplefreq Frequency with which samples are logged from the MCMC (basically the thinning).
 #' @param mixing.diagn.freq Frequency of adaptive Metropolis-within-Gibbs updates do the tuning parameters of the proposal distributions.
+#'			Default value is every 50 MCMC iterations.
 #' @param savefreq Frequency with which MCMC_output object is saved.
 #' @param directory Directory into which you want output to be saved.
 #' @param prefix Prefix to be attached to all output files.
@@ -1442,7 +1444,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 									ngen,
 									printfreq,
 									samplefreq,
-									mixing.diagn.freq,
+									mixing.diagn.freq = 50,
 									savefreq,
 									directory=NULL,
 									prefix){

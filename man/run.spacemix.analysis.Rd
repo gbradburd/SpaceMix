@@ -11,7 +11,7 @@ run.spacemix.analysis(n.fast.reps, fast.MCMC.ngen, fast.model.option,
   source.spatial.prior.scale = NULL, spatial.prior.X.coordinates,
   spatial.prior.Y.coordinates, round.earth,
   long.run.initial.parameters = NULL, k, loci, ngen, printfreq, samplefreq,
-  mixing.diagn.freq, savefreq, directory = NULL, prefix)
+  mixing.diagn.freq = 50, savefreq, directory = NULL, prefix)
 }
 \arguments{
 \item{n.fast.reps}{The number of short initial runs to perform.}
@@ -56,11 +56,12 @@ and \code{nugget}, and each element of the list should named for the correspondi
 
 \item{ngen}{Number of MCMC gnereations for the long MCMC.}
 
-\item{printfreq}{Frequency with which updates are printed.}
+\item{printfreq}{Frequency with which updates are printed.  The updates consist of the current MCMC iteration followed by the posterior probability.}
 
 \item{samplefreq}{Frequency with which samples are logged from the MCMC (basically the thinning).}
 
-\item{mixing.diagn.freq}{Frequency of adaptive Metropolis-within-Gibbs updates do the tuning parameters of the proposal distributions.}
+\item{mixing.diagn.freq}{Frequency of adaptive Metropolis-within-Gibbs updates do the tuning parameters of the proposal distributions.
+Default value is every 50 MCMC iterations.}
 
 \item{savefreq}{Frequency with which MCMC_output object is saved.}
 
