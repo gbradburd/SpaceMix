@@ -39,7 +39,7 @@ This function returns a list that can be used for plotting and visualization
 		element gives the name of the corresponding sample.
 \item color.vector This is a vector of colors of length k in which each element
 		gives the color in which the corresponding sample should be plotted.
-\item quantile=quantile This value determines the size of the credible interval
+\item quantile This value determines the size of the credible interval
 		calculated for model parameters.
 \item best.iter This is the index of the sampled MCMC iteration with the largest
 		posterior probability.  We refer to parameter estimates in that iteration as

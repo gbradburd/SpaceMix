@@ -175,15 +175,15 @@ and you can take a look at it with
 # load the example dataset and look at its elements
 require(SpaceMix)
 data(spacemix.example.dataset)
-str(spacemix.dataset)
+str(spacemix.example.dataset)
 
 # look at the attributes of the allele counts matrix
-dim(spacemix.dataset$allele.counts)
-class(spacemix.dataset$allele.counts)
+dim(spacemix.example.dataset$allele.counts)
+class(spacemix.example.dataset$allele.counts)
 
 # look at the first 10 loci
-spacemix.dataset$allele.counts[1:30,1:10]
-spacemix.dataset$sample.sizes[1:30,1:10]
+spacemix.example.dataset$allele.counts[1:30,1:10]
+spacemix.example.dataset$sample.sizes[1:30,1:10]
 ```
 
 These two matrices, _C~lk~_ and _S~lk~_ can then be used to 
@@ -218,11 +218,11 @@ matrix should look like is given below:
 ```{r allele.freq.data}
 # load the example dataset and look at its elements
 data(spacemix.example.dataset)
-str(spacemix.dataset)
+str(spacemix.example.dataset)
 
 # Now create an example allele frequency matrix by 
 #	dividing the allele counts by the sample sizes
-allele.frequency.matrix <- spacemix.dataset$allele.counts / spacemix.dataset$sample.sizes
+allele.frequency.matrix <- spacemix.example.dataset$allele.counts / spacemix.example.dataset$sample.sizes
 
 ```
 
@@ -632,17 +632,17 @@ run.spacemix.analysis(n.fast.reps = 10,
 						data.type = "counts",
 						sample.frequencies=NULL,
 						mean.sample.sizes=NULL,
-						counts = spacemix.dataset$allele.counts,
-						sample.sizes = spacemix.dataset$sample.sizes,
+						counts = spacemix.example.dataset$allele.counts,
+						sample.sizes = spacemix.example.dataset$sample.sizes,
 						sample.covariance=NULL,
 						target.spatial.prior.scale=NULL,
 						source.spatial.prior.scale=NULL,
-						spatial.prior.X.coordinates = spacemix.dataset$population.coordinates[,1],
-						spatial.prior.Y.coordinates = spacemix.dataset$population.coordinates[,2],
+						spatial.prior.X.coordinates = spacemix.example.dataset$population.coordinates[,1],
+						spatial.prior.Y.coordinates = spacemix.example.dataset$population.coordinates[,2],
 						round.earth = FALSE,
 						long.run.initial.parameters=NULL,
-						k = nrow(spacemix.dataset$allele.counts),
-						loci = ncol(spacemix.dataset$sample.sizes),
+						k = nrow(spacemix.example.dataset$allele.counts),
+						loci = ncol(spacemix.example.dataset$sample.sizes),
 						ngen = 1e6,
 						printfreq = 1e2,
 						samplefreq = 1e3,
@@ -673,9 +673,9 @@ estimated on a flat plane, rather than on a globe.
 data(spacemix.example.dataset)
 
 # Next, make allele frequencies and mean sample size objects
-allele.frequencies <- spacemix.dataset$allele.counts / spacemix.dataset$sample.sizes
-tmp.sample.sizes <- spacemix.dataset$sample.sizes
-tmp.sample.sizes[which(spacemix.dataset$sample.sizes == 0)] <- NA
+allele.frequencies <- spacemix.example.dataset$allele.counts / spacemix.example.dataset$sample.sizes
+tmp.sample.sizes <- spacemix.example.dataset$sample.sizes
+tmp.sample.sizes[which(spacemix.example.dataset$sample.sizes == 0)] <- NA
 mean.sample.sizes <- rowMeans(tmp.sample.sizes,na.rm=TRUE)
 
 # Data option: allele frequencies and mean sample sizes
@@ -697,8 +697,8 @@ run.spacemix.analysis(n.fast.reps = 10,
 						sample.covariance=NULL,
 						target.spatial.prior.scale=NULL,
 						source.spatial.prior.scale=NULL,
-						spatial.prior.X.coordinates = runif(nrow(spacemix.dataset$allele.counts),-180,180),
-						spatial.prior.Y.coordinates = runif(nrow(spacemix.dataset$allele.counts),-90,90),
+						spatial.prior.X.coordinates = runif(nrow(spacemix.example.dataset$allele.counts),-180,180),
+						spatial.prior.Y.coordinates = runif(nrow(spacemix.example.dataset$allele.counts),-90,90),
 						round.earth = TRUE,
 						long.run.initial.parameters=NULL,
 						k = nrow(allele.frequencies),
@@ -732,13 +732,13 @@ and distances between locations are being estimated on a globe.
 data(spacemix.example.dataset)
 
 # Next, calculate sample covariance of normalized allele frequencies
-allele.frequencies <- spacemix.dataset$allele.counts / spacemix.dataset$sample.sizes
-normalized.allele.freqs <- normalize.allele.freqs(allele.frequencies,spacemix.dataset$sample.sizes)
+allele.frequencies <- spacemix.example.dataset$allele.counts / spacemix.example.dataset$sample.sizes
+normalized.allele.freqs <- normalize.allele.freqs(allele.frequencies,spacemix.example.dataset$sample.sizes)
 sample.cov <- cov(t(normalized.allele.freqs))
 
 # And get the mean sample sizes
-tmp.sample.sizes <- spacemix.dataset$sample.sizes
-tmp.sample.sizes[which(spacemix.dataset$sample.sizes == 0)] <- NA
+tmp.sample.sizes <- spacemix.example.dataset$sample.sizes
+tmp.sample.sizes[which(spacemix.example.dataset$sample.sizes == 0)] <- NA
 mean.sample.sizes <- rowMeans(tmp.sample.sizes,na.rm=TRUE)
 
 # Now, generate a list of parameter values at which to initiate 
@@ -746,7 +746,7 @@ mean.sample.sizes <- rowMeans(tmp.sample.sizes,na.rm=TRUE)
 initial.param.vals <- list("a0" = 0.9,
 					 "a1" = 1.3,
 					 "a2" = 0.5,
-					 "population.coordinates" = rbind(spacemix.dataset$population.coordinates,
+					 "population.coordinates" = rbind(spacemix.example.dataset$population.coordinates,
 					 						   matrix(runif(60,1,9),nrow=30,ncol=2)),
 					 "admix.proportions" = rep(0.01,30),
 					 "nugget" = rep(0.1,30))
@@ -771,8 +771,8 @@ run.spacemix.analysis(n.fast.reps = 0,
 						sample.covariance = sample.cov,
 						target.spatial.prior.scale=NULL,
 						source.spatial.prior.scale=NULL,
-						spatial.prior.X.coordinates = runif(nrow(spacemix.dataset$allele.counts),-180,180),
-						spatial.prior.Y.coordinates = runif(nrow(spacemix.dataset$allele.counts),-90,90),
+						spatial.prior.X.coordinates = runif(nrow(spacemix.example.dataset$allele.counts),-180,180),
+						spatial.prior.Y.coordinates = runif(nrow(spacemix.example.dataset$allele.counts),-90,90),
 						round.earth = TRUE,
 						long.run.initial.parameters = initial.param.vals,
 						k = nrow(sample.cov),
@@ -831,7 +831,7 @@ from a SpaceMix analysis:
 
 ```{r trace.plots, fig.width=7, fig.height=3.5}
 # First, load the example data object
-data(example.SpaceMix.output)
+data(ex.output)
 
 # Trace plot of posterior probability over the MCMC
 plot(ex.output$Prob,xlab="MCMC iterations",ylab="value",
@@ -880,7 +880,7 @@ and the user may wish to perform subsequent analyses.
 
 ```{r acceptance.rates, fig.width=7, fig.height=3.5}
 # First, load the example data object
-data(example.SpaceMix.output)
+data(ex.output)
 
 # Acceptance rate of a0 over the course of the 
 #	MCMC analysis
@@ -915,7 +915,7 @@ quick approaches for visually assessing model adequacy.
 #	Note that it is not generated if the user has specified the 
 #	sample covariance.
 
-data(example.model.adequacy.RData)
+data(MCN.frequencies.list.RData)
 
 # Now, calculate the sample covariance from the mean centered 
 # 	and normalized sample allele frequencies.
@@ -923,7 +923,7 @@ data(example.model.adequacy.RData)
 								use="pairwise.complete.obs")
 
 # Next, load the example SpaceMix output object
-data(example.SpaceMix.output)
+data(ex.output)
 
 # Create a matrix that will perform a mean-centering 
 #	on the parametric covariance matrix

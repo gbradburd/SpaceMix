@@ -563,6 +563,7 @@ initiate.admix.proportions <- function(k,model.option){
 }
 
 initiate.population.coordinates <- function(spatial.prior.X.coordinates,spatial.prior.Y.coordinates,k){
+	# recover()
 	population.coordinates <- 	rbind(
 		cbind(spatial.prior.X.coordinates,
 			spatial.prior.Y.coordinates),
@@ -1403,17 +1404,17 @@ query.MCMC.output <- function(MCMC.output,param.names=NULL,last.param.names=NULL
 #' 			data.type = "counts",
 #' 			sample.frequencies = NULL,
 #' 			mean.sample.sizes = NULL,
-#' 			counts = spacemix.dataset$allele.counts,
-#' 			sample.sizes = spacemix.dataset$sample.sizes,
+#' 			counts = spacemix.example.dataset$allele.counts,
+#' 			sample.sizes = spacemix.example.dataset $sample.sizes,
 #' 			sample.covariance = NULL,
 #'			target.spatial.prior.scale = NULL,
 #' 			source.spatial.prior.scale = NULL,
-#' 			spatial.prior.X.coordinates = spacemix.dataset$population.coordinates[,1],
-#' 			spatial.prior.Y.coordinates = spacemix.dataset$population.coordinates[,2],
+#' 			spatial.prior.X.coordinates = spacemix.example.dataset $population.coordinates[,1],
+#' 			spatial.prior.Y.coordinates = spacemix.example.dataset $population.coordinates[,2],
 #' 			round.earth = FALSE,
 #' 			long.run.initial.parameters = NULL,
-#' 			k = nrow(spacemix.dataset$allele.counts),
-#' 			loci = ncol(spacemix.dataset$allele.counts),
+#' 			k = nrow(spacemix.example.dataset $allele.counts),
+#' 			loci = ncol(spacemix.example.dataset $allele.counts),
 #' 			ngen = 5000,
 #'			printfreq = 50,
 #' 			samplefreq = 5,
@@ -1769,7 +1770,7 @@ plot.credible.ellipse <- function(ellipse_boundary,population.color,fading=0.3,l
 #'		element gives the name of the corresponding sample.
 #' \item color.vector This is a vector of colors of length k in which each element
 #' 		gives the color in which the corresponding sample should be plotted.
-#' \item quantile=quantile This value determines the size of the credible interval
+#' \item quantile This value determines the size of the credible interval
 #' 		calculated for model parameters.
 #' \item best.iter This is the index of the sampled MCMC iteration with the largest
 #'		posterior probability.  We refer to parameter estimates in that iteration as
@@ -1832,7 +1833,7 @@ make.spacemix.map.list <- function(MCMC.output.file,geographic.locations,name.ve
 	pp.admix.source.location.matrices <- lapply(1:k,get.posterior.location.matrix.from.list,posterior.list=procrustes.coord.posterior.lists$admix.source.coords.list)
 	pp.geogen.ellipses <- lapply(pp.geogen.location.matrices,get.credible.ellipse,quantile)
 	pp.admix.source.ellipses <- lapply(pp.admix.source.location.matrices,get.credible.ellipse,quantile)
-	spacemix.map.list <- c(MCMC.output,
+	spacemix.map.list <- c(list(MCMC.output=MCMC.output),
 							list(geographic.locations=geographic.locations),
 								list(name.vector=name.vector),list(color.vector=color.vector),
 								list(quantile=quantile),list(best.iter = best.iter),
@@ -1906,7 +1907,7 @@ make.spacemix.map <- function(spacemix.map.list,text=FALSE,ellipses=TRUE,source.
 				}
 				text(MAPP.admix.source.coords,col= admix.source.color.vector,font=3,labels=name.vector,cex=0.7)
 				plot.admix.arrows(MAPP.admix.source.coords, MAPP.geogen.coords,
-									admix.proportions=admix.proportions[,best.iter],
+									admix.proportions=MCMC.output$admix.proportions[,best.iter],
 									colors=admix.source.color.vector,length=0.1)
 			}
 				box(lwd=2)
@@ -1981,17 +1982,3 @@ query.spacemix.map <- function(focal.pops,spacemix.map.list,ellipses=TRUE,source
 	})
 	return(invisible("highlighted samples!"))
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
