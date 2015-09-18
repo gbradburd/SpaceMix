@@ -18,12 +18,23 @@ This repository contains the R package SpaceMix and accompanying
 vignette.  To install the package you can either:
 
 (1) download the .tar.gz file and install using 
-install.packages("~/SpaceMix_X.tar.gz",repos=FALSE)
+
+> install.packages("~/SpaceMix_X.tar.gz",repos=FALSE)
+
 where "X" in the package name denotes the number of 
 the most current version.
 
 OR
 
 (2) install directly from github using 
+
 > require(devtools)
-> install_github("gbradburd/SpaceMix")
+> install_github("gbradburd/SpaceMix",build_vignettes=TRUE)
+
+You can then look at the vignette with 
+
+> vignette("spacemix_vignette")
+
+and you can see all documented functions using 
+
+> ??SpaceMix
