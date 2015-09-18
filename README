@@ -7,27 +7,23 @@
 PREAMBLE
 Caveat user: this code is still in beta.  Please contact
 Gideon Bradburd at gbradburd(at)ucdavis(dot)edu with bug
-reports or questions.
+reports or questions.  Please thoroughly read the 
+documentation and go through the vignette first to make sure 
+your question has not already been addressed.
 
-Also, check the git for updates!
+Also, remember to check the git for updates!
 
 README
-This repository contains 4 other documents:
+This repository contains the R package SpaceMix and accompanying 
+vignette.  To install the package you can either:
 
-(1) space.mix.MCMC.R:
-	Contains the R code for the MCMC algorithm.
+(1) download the .tar.gz file and install using 
+install.packages("~/SpaceMix_X.tar.gz",repos=FALSE)
+where "X" in the package name denotes the number of 
+the most current version.
 
-(2) example_dataset.Robj:
-	An R object to be loaded into working memory. Contains 
-	simulated dataset of allele counts, sample sizes,
-	and population coordinates in a named list.  The data
-	were simulated on a lattice with a central longitudinal
-	barrier to dispersal.
+OR
 
-(3) exe.spacemix.R
-	Contains commented examples (R code) of how to execute 
-	SpaceMix analyses.
-	
-(4) spacemix_plotting_functions.R
-	Contains commented examples (R code) of how to visualize
-	output from SpaceMix MCMC analysis.
+(2) install directly from github using 
+> require(devtools)
+> install_github("gbradburd/SpaceMix")
