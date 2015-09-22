@@ -1757,6 +1757,9 @@ plot.credible.ellipse <- function(ellipse_boundary,population.color,fading=0.3,l
 #' @param quantile This value determines the size of the credible interval
 #' 		calculated for model parameters.  A value of 0.95 denotes the 95\% credible 
 #'		interval.
+#' @param burnin This value determines how many sampled iterations of the MCMC to discard
+#' 		as `burn-in.' A value of 200 means that the first 200 sampled iterations of the MCMC 
+#' 		will be discarded when calculating credible intervals.
 #'
 #' @return This function returns a list that can be used for plotting and visualization
 #'		of SpaceMix output.  The components of this list are:
@@ -1811,14 +1814,20 @@ plot.credible.ellipse <- function(ellipse_boundary,population.color,fading=0.3,l
 #'		location coordinates of the ith sample.
 #' }
 
-make.spacemix.map.list <- function(MCMC.output.file,geographic.locations,name.vector,color.vector,quantile=0.95){
+make.spacemix.map.list <- function(MCMC.output.file,geographic.locations,name.vector,color.vector,quantile=0.95,burnin=0){
 	MCMC.output <- load_MCMC_output(MCMC.output.file)
-	best.iter <- which.max(MCMC.output$Prob)
+	x <- seq((burnin+1),length(MCMC.output$Prob),by=1)
+	best.iter <- which.max(MCMC.output$Prob[x])
+	if(max(MCMC.output$Prob) > max(MCMC.output$Prob[x])){
+		message("warning: the MCMC iteration with the\n 
+				highest posterior probability is being\n 
+				discarded as burn-in")
+	}
 	k <- MCMC.output$last.params$k
 	if(is.null(color.vector)){
 		color.vector <- rep(1,k)
 	}
-	admix.source.color.vector <- fade.admixture.source.points(color.vector,rowMeans(MCMC.output$admix.proportions))
+	admix.source.color.vector <- fade.admixture.source.points(color.vector,rowMeans(MCMC.output$admix.proportions[,x]))
 	MAPP.geogen.coords <- spacemix.procrustes(X = geographic.locations,
 											Y = MCMC.output$population.coordinates[[best.iter]][1:k,],
 											k = k,option = 1)
@@ -1828,7 +1837,7 @@ make.spacemix.map.list <- function(MCMC.output.file,geographic.locations,name.ve
 												admix.source.locs = MCMC.output$population.coordinates[[best.iter]][(k+1):(2*k),],
 												option=2)
 	procrustes.coord.posterior.lists <- get.procrustes.locations.posterior.list(geographic.locations = geographic.locations,
-																				population.coordinates.posterior = MCMC.output$population.coordinates)
+																				population.coordinates.posterior = MCMC.output$population.coordinates[x])
 	pp.geogen.location.matrices <- lapply(1:k,get.posterior.location.matrix.from.list,posterior.list=procrustes.coord.posterior.lists$geogen.coords.list)
 	pp.admix.source.location.matrices <- lapply(1:k,get.posterior.location.matrix.from.list,posterior.list=procrustes.coord.posterior.lists$admix.source.coords.list)
 	pp.geogen.ellipses <- lapply(pp.geogen.location.matrices,get.credible.ellipse,quantile)

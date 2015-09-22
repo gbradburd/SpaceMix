@@ -5,7 +5,7 @@
 \title{Post-processes SpaceMix output for plotting}
 \usage{
 make.spacemix.map.list(MCMC.output.file, geographic.locations, name.vector,
-  color.vector, quantile = 0.95)
+  color.vector, quantile = 0.95, burnin = 0)
 }
 \arguments{
 \item{MCMC.output.file}{This is the full path, given as a character argument
@@ -23,8 +23,12 @@ element gives the name of the corresponding sample.}
 gives the color in which the corresponding sample should be plotted.}
 
 \item{quantile}{This value determines the size of the credible interval
-        calculated for model parameters.  A value of 0.95 denotes the 95\% credible
-        interval.}
+calculated for model parameters.  A value of 0.95 denotes the 95\% credible
+interval.}
+
+\item{burnin}{This value determines how many sampled iterations of the MCMC to discard
+        as `burn-in.' A value of 200 means that the first 200 sampled iterations of the MCMC
+        will be discarded when calculating credible intervals.}
 }
 \value{
 This function returns a list that can be used for plotting and visualization

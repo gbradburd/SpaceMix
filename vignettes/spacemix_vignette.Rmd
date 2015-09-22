@@ -1013,12 +1013,15 @@ sample.names <- unlist(lapply(1:30,function(i){sprintf("Sample_%s",i)}))
 rainbow(n=30,start=4/6,end=6/6)[as.numeric(cut(population.coordinates[,1],30))]
 
 # And now generate a sample map list using a 95% 
-#	credible interval on parameter estimates
+#	credible interval on parameter estimates without 
+# 	`burning' (i.e., discarding) any sampled iterations
+#	of the MCMC.
 example.spacemix.map.list <- make.spacemix.map.list(MCMC.output.file = "~/MY_PATH/example_MCMC_output1.Robj",
 								geographic.locations = population.coordinates,
 								name.vector = sample.names,
 								color.vector = sample.colors,
-	⁃								quantile=0.95)
+								quantile=0.95,
+								burnin=0)
 ```
 
 Now, using this list, we can make a geogenetic map
