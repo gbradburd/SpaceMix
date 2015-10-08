@@ -1982,7 +1982,7 @@ query.spacemix.map <- function(focal.pops,spacemix.map.list,ellipses=TRUE,source
 						y0 = MAPP.admix.source.coords[focal.indices,2],
 						x1 = MAPP.geogen.coords[focal.indices,1],
 						y1 = MAPP.geogen.coords[focal.indices,2],
-						col= admix.source.color.vector[focal.indices[i]],
+						col= admix.source.color.vector[focal.indices],
 						lwd=1,
 						length=0.1)
 			}

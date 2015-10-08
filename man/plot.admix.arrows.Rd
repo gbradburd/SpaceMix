@@ -4,8 +4,8 @@
 \alias{plot.admix.arrows}
 \title{Plots admixture arrows}
 \usage{
-\method{plot}{admix.arrows}(admix.source.coords, geogen.coords,
-  admix.proportions, colors = NULL, length = 0.1)
+plot.admix.arrows(admix.source.coords, geogen.coords, admix.proportions,
+  colors = NULL, length = 0.1)
 }
 \arguments{
 \item{admix.source.coords}{This is a k x 2 matrix of coordinates in which
