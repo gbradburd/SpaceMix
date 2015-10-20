@@ -8,3 +8,4 @@
 .Rhistory
 .RData
 inst/doc
+make_pkg.R

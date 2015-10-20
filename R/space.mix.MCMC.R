@@ -1077,12 +1077,8 @@ MCMC <- function(model.option,
 				samplefreq,
 				mixing.diagn.freq = 50,
 				savefreq,
-				directory=NULL,
                 prefix=""){
 	# recover()
-	if(!is.null(directory)){
-		setwd(directory)
-	}
 	proj.mat.option <- NULL
 	likelihood.option <- "wishart"
 	spacemix.data <- spacemix.data(data.type = data.type,
@@ -1451,6 +1447,9 @@ run.spacemix.analysis <- function(n.fast.reps,
 									prefix){
 	# recover()									
 	if(n.fast.reps !=0){
+		if(!is.null(directory)){
+			setwd(directory)
+		}
 		fast.run.dirs <- unlist(lapply(1:n.fast.reps,FUN=function(i){paste("fast_run_",i,sep="")}))
 		for(i in 1:n.fast.reps){
 			dir.create(fast.run.dirs[i])
@@ -1482,7 +1481,6 @@ run.spacemix.analysis <- function(n.fast.reps,
 					samplefreq = fast.MCMC.ngen/1e3,
 					mixing.diagn.freq = mixing.diagn.freq,
 					savefreq = fast.MCMC.ngen/2,
-					directory = directory,
 					prefix=paste(fast.run.dirs[i],"_",sep=""))
 			},error=function(e){
 							cat("fast run",i,"failed","\n") ;
@@ -1532,7 +1530,6 @@ run.spacemix.analysis <- function(n.fast.reps,
 				samplefreq = samplefreq,
 				mixing.diagn.freq = mixing.diagn.freq,
 				savefreq = savefreq,
-				directory = directory,
                 prefix=prefix)
 	setwd("..")
 	return("analysis completed.")
