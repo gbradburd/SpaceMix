@@ -39,7 +39,12 @@ This function plots the output of a SpaceMix analysis.  If specified,
 		source locations.  Ellipses with solid margins denote credible intervals on
 		the posterior distributions of sample geogenetic locations, while those with dashed
 		margins denote credible intervals on the posterior distributions of sample admixture
-		source locations. The return value of this function is invisible.
+		source locations. The \code{source.option} specifies whether admixture source
+		locations are drawn, as well as whether admixture arrows are drawn.  Admixture
+		arrows are drawn from a source of admixture to its target.  The opacity of the
+		admixture arrows (and credible ellipses on admixture source locations) is proportional
+		to the amount of admixture drawn (i.e., samples with more admixture have darker arrows
+		and ellipses). The return value of this function is invisible.
 }
 \description{
 This function plots the output of a SpaceMix analysis. Users can specify
