@@ -1010,7 +1010,7 @@ population.coordinates <- matrix(c(1,1,1,1,1,3,3,3,3,3,5,5,5,5,5,
 sample.names <- unlist(lapply(1:30,function(i){sprintf("Sample_%s",i)}))
 
 # And generate a vector of sample colors
-rainbow(n=30,start=4/6,end=6/6)[as.numeric(cut(population.coordinates[,1],30))]
+sample.colors <- rainbow(n=30,start=4/6,end=6/6)[as.numeric(cut(population.coordinates[,1],30))]
 
 # And now generate a sample map list using a 95% 
 #	credible interval on parameter estimates without 
