@@ -19,7 +19,7 @@ vignette.  To install the package you can either:
 
 (1) download the .tar.gz file and install using 
 
-> install.packages("~/SpaceMix_X.tar.gz",repos=FALSE)
+> install.packages("~/SpaceMix_X.tar.gz",repos=NULL)
 
 where "X" in the package name denotes the number of 
 the most current version.
