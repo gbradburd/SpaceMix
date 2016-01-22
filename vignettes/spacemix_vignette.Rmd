@@ -8,7 +8,8 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-<!-- render("~/Dropbox/space.mix/SpaceMix/vignettes/spacemix_vignette.Rmd") -->
+<!-- render("~/Dropbox/space.mix/SpaceMix/vignettes/spacemix_vignette.Rmd",
+				html_vignette(toc=TRUE)) -->
 # Introduction
 SpaceMix is a statistical method that uses genome-wide polymorphism 
 data to build “geogenetic maps,” in which the distances between 
