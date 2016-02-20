@@ -298,7 +298,7 @@ get.mean.sample.size <- function(sample.sizes){
 
 get.weighted.mean.frequency <- function(sample.frequencies,mean.sample.sizes){
 	na.pops <- which(is.na(sample.frequencies))
-	if(sum(na.pops) > 0){
+	if(any(na.pops != 0)){
 		sample.frequencies <- sample.frequencies[-na.pops]
 		mean.sample.sizes <- mean.sample.sizes[-na.pops]
 	}
@@ -315,7 +315,7 @@ curate.count.data <- function(counts,sample.sizes,prefix){
 		fixed.alleles <- c(which(colSums(sample.frequencies)==0),which(colSums(sample.frequencies)==k))
 		na.loci <- which(is.na(sample.frequencies),arr.ind=TRUE)[,2]
 		loci.to.drop <- unique(c(no.samples,fixed.alleles,na.loci))
-	if(sum(loci.to.drop) > 0){	
+	if(any(loci.to.drop != 0)){	
 		counts <- counts[,-loci.to.drop]
 		sample.sizes <- sample.sizes[,-loci.to.drop]
 		sample.frequencies <- sample.frequencies[,-loci.to.drop]
@@ -345,31 +345,13 @@ curate.frequency.data <- function(sample.frequencies){
 	na.loci <- which(is.na(sample.frequencies),arr.ind=TRUE)[,2]
 	missing.data <- which(!is.finite(sample.frequencies),arr.ind=TRUE)[,2]
 	loci.to.drop <- unique(c(fixed.alleles,na.loci,missing.data))
-	if(sum(loci.to.drop) > 0){	
+	if(any(loci.to.drop != 0)){
 		sample.frequencies <- sample.frequencies[,-loci.to.drop]
 	}
 	if(ncol(sample.frequencies) == 0){
 		stop("you have no loci remaining in your curated dataset.")
 	}
 	return(sample.frequencies)
-}
-
-mean.center.normalize.frequencies <- function(sample.frequencies,mean.sample.sizes,prefix){
-	# recover()
-	k <- nrow(sample.frequencies)
-	#mean-center, normalize, and project sample frequencies
-		mean.frequencies <- apply(sample.frequencies,2,get.weighted.mean.frequency,mean.sample.sizes=mean.sample.sizes)
-		mean.freq.mat <- matrix(mean.frequencies,nrow=k,ncol=length(mean.frequencies),byrow=TRUE)
-		normalized.sample.frequencies <- sample.frequencies / sqrt(mean.freq.mat * (1 - mean.freq.mat))
-		mean.centered.sample.frequencies <- sample.frequencies - mean.freq.mat
-		mean.centered.normalized.sample.frequencies <- mean.centered.sample.frequencies / sqrt(mean.freq.mat * (1 - mean.freq.mat))
-	MCN.frequencies.list <- list(	"mean.sample.sizes" = mean.sample.sizes,
-											"sample.frequencies" = sample.frequencies,
-											"normalized.sample.frequencies" = normalized.sample.frequencies,
-											"mean.centered.sample.frequencies" = mean.centered.sample.frequencies,
-											"mean.centered.normalized.sample.frequencies" = mean.centered.normalized.sample.frequencies)
-			save(MCN.frequencies.list,file=paste(prefix,"_MCN.frequencies.list.Robj",sep=''))
-	return(mean.centered.normalized.sample.frequencies)
 }
 
 get.projection.matrix <- function(mean.sample.sizes,proj.mat.option=NULL,likelihood.option){
@@ -440,21 +422,6 @@ mean.center.normalize.frequencies <- function(sample.frequencies,mean.sample.siz
 											"mean.centered.normalized.sample.frequencies" = mean.centered.normalized.sample.frequencies)
 			save(MCN.frequencies.list,file=paste(prefix,"_MCN.frequencies.list.Robj",sep=''))
 	return(mean.centered.normalized.sample.frequencies)
-}
-
-get.sample.covariance <- function(counts,sample.sizes){
-	sample.frequencies <- counts/sample.sizes
-	mean.sample.sizes <- rowMeans(sample.sizes)
-	mean.sample.frequencies <- matrix(apply(sample.frequencies,2,
-											get.weighted.mean.frequency,
-											mean.sample.sizes=mean.sample.sizes),
-									nrow=length(mean.sample.sizes),ncol=ncol(sample.frequencies),byrow=TRUE)
-	normalized.sample.frequencies <- sample.frequencies/sqrt(mean.sample.frequencies*(1-mean.sample.frequencies))
-	sample.covariance <- cov(t(normalized.sample.frequencies),use="pairwise.complete.obs")
-	loci <- ncol(sample.frequencies)
-	return(list("sample.covariance" = sample.covariance,
-				"mean.sample.sizes" = mean.sample.sizes,
-				"loci" = loci))
 }
 
 spacemix.data <- function(data.type,likelihood.option,proj.mat.option=NULL,sample.frequencies=NULL,loci,mean.sample.sizes=NULL,counts=NULL,sample.sizes=NULL,sample.covariance=NULL,cov.standard.error=NULL,prefix){
@@ -1401,16 +1368,16 @@ query.MCMC.output <- function(MCMC.output,param.names=NULL,last.param.names=NULL
 #' 			sample.frequencies = NULL,
 #' 			mean.sample.sizes = NULL,
 #' 			counts = spacemix.example.dataset$allele.counts,
-#' 			sample.sizes = spacemix.example.dataset $sample.sizes,
+#' 			sample.sizes = spacemix.example.dataset$sample.sizes,
 #' 			sample.covariance = NULL,
 #'			target.spatial.prior.scale = NULL,
 #' 			source.spatial.prior.scale = NULL,
-#' 			spatial.prior.X.coordinates = spacemix.example.dataset $population.coordinates[,1],
-#' 			spatial.prior.Y.coordinates = spacemix.example.dataset $population.coordinates[,2],
+#' 			spatial.prior.X.coordinates = spacemix.example.dataset$population.coordinates[,1],
+#' 			spatial.prior.Y.coordinates = spacemix.example.dataset$population.coordinates[,2],
 #' 			round.earth = FALSE,
 #' 			long.run.initial.parameters = NULL,
-#' 			k = nrow(spacemix.example.dataset $allele.counts),
-#' 			loci = ncol(spacemix.example.dataset $allele.counts),
+#' 			k = nrow(spacemix.example.dataset$allele.counts),
+#' 			loci = ncol(spacemix.example.dataset$allele.counts),
 #' 			ngen = 5000,
 #'			printfreq = 50,
 #' 			samplefreq = 5,
@@ -1761,52 +1728,52 @@ plot.credible.ellipse <- function(ellipse_boundary,population.color,fading=0.3,l
 #' @return This function returns a list that can be used for plotting and visualization
 #'		of SpaceMix output.  The components of this list are:
 #' \itemize{
-#' \item MCMC.output This is a list of the output of the SpaceMix analysis, 
+#' \item MCMC.output - This is a list of the output of the SpaceMix analysis, 
 #'			containing all the elements of the output .Robj file.
-#' \item geographic.locations This is a k x 2 matrix in which the ith row
+#' \item geographic.locations - This is a k x 2 matrix in which the ith row
 #'		gives the geographic coordinates (i.e., longitude and latitude) of 
 #'		the ith sample.
-#' \item name.vector This is a character vector of length k in which each 
+#' \item name.vector - This is a character vector of length k in which each 
 #'		element gives the name of the corresponding sample.
-#' \item color.vector This is a vector of colors of length k in which each element
+#' \item color.vector - This is a vector of colors of length k in which each element
 #' 		gives the color in which the corresponding sample should be plotted.
-#' \item quantile This value determines the size of the credible interval
+#' \item quantile - This value determines the size of the credible interval
 #' 		calculated for model parameters.
-#' \item best.iter This is the index of the sampled MCMC iteration with the largest
+#' \item best.iter - This is the index of the sampled MCMC iteration with the largest
 #'		posterior probability.  We refer to parameter estimates in that iteration as
 #'		the maximum a posteriori (MAP) estimates.
-#' \item admix.source.color.vector This is a vector of faded colors (the same as given
+#' \item admix.source.color.vector - This is a vector of faded colors (the same as given
 #'		in \code{color.vector}), for which the extent of fading is determined by the 
 #' 		admixture proportion.  These colors, for which the opacity is proportional
 #'		to the estimated admixture proportion, are used in plotting the admixture 
 #'		sources and admixture arrows.
-#' \item k This is the number of samples in the analysis.
-#' \item MAPP.geogen.coords This is the Procrustes-transformed MAP geogenetic location 
+#' \item k - This is the number of samples in the analysis.
+#' \item MAPP.geogen.coords - This is the Procrustes-transformed MAP geogenetic location 
 #'		coordinates.
-#' \item MAPP.admix.source.coords This is the Procrustes-transformed MAP admixture source 
+#' \item MAPP.admix.source.coords - This is the Procrustes-transformed MAP admixture source 
 #'		location coordinates.
-#' \item procrustes.coord.posterior.lists This is a list of the Procrustes-transformed 
+#' \item procrustes.coord.posterior.lists - This is a list of the Procrustes-transformed 
 #'		location parameter coordinates.
 #' 		\itemize{
-#' 			\item geogen.coords.list A list of length N, where I is the number of sampled
+#' 			\item geogen.coords.list - A list of length N, where I is the number of sampled
 #'					MCMC iterations.  The ith element of the list contains the Procrustes-
 #'					transformed geogenetic location coordinates in the ith sampled iteration 
 #'					of the MCMC.  As a whole, this list represents the posterior distribution 
 #'					of geogenetic location parameters for all samples.
-#' 			\item admix.source.coords.list A list of length N, where I is the number of sampled
+#' 			\item admix.source.coords.list - A list of length N, where I is the number of sampled
 #'					MCMC iterations.  The ith element of the list contains the Procrustes-
 #'					transformed admixture source location coordinates in the ith sampled iteration 
 #'					of the MCMC.  As a whole, this list represents the posterior distribution 
 #'					of admixture source location parameters for all samples.
 #' 		}
-#' \item pp.geogen.location.matrices A list of length k in which the ith element is the Procrustes-
+#' \item pp.geogen.location.matrices - A list of length k in which the ith element is the Procrustes-
 #' 		transformed posterior distribution of geogenetic location coordinates for the ith sample.
-#' \item pp.admix.source.location.matrices A list of length k in which the ith element is the Procrustes-
+#' \item pp.admix.source.location.matrices - A list of length k in which the ith element is the Procrustes-
 #' 		transformed posterior distribution of admixture source location coordinates for the ith sample.
-#' \item pp.geogen.ellipses A list of length k in which the ith element gives the boundaries of the 
+#' \item pp.geogen.ellipses - A list of length k in which the ith element gives the boundaries of the 
 #' 		95\% credible ellipse of the Procrustes-transformed posterior distribution of geogenetic 
 #'		location coordinates of the ith sample.
-#' \item pp.admix.source.ellipses A list of length k in which the ith element gives the boundaries of the 
+#' \item pp.admix.source.ellipses - A list of length k in which the ith element gives the boundaries of the 
 #' 		95\% credible ellipse of the Procrustes-transformed posterior distribution of admixture source  
 #'		location coordinates of the ith sample.
 #' }
@@ -1992,4 +1959,73 @@ query.spacemix.map <- function(focal.pops,spacemix.map.list,ellipses=TRUE,source
 				box(lwd=2)
 	})
 	return(invisible("highlighted samples!"))
+}
+
+#' Converts allele count and sample size data to a normalized 
+#' allele frequency covariance matrix
+#'	
+#' This function generates a normalized covariance matrix from 
+#' allele count and sample size data.  The output can be used 
+#' to run a SpaceMix analysis using the \code{run.spacemix.analysis}
+#' function. Running a SpaceMix analysis on this normalized covariance 
+#' matrix (rather than on raw allele count and sample size data, or 
+#' on sample allele frequency data) is recommended when there are many 
+#' loci for which there are missing data, as its use results in pairwise, 
+#' rather than listwise, deletion of missing data.
+#'
+#' The normalization is used to standardize the variance in 
+#' allele frequencies across loci, and is performed by dividing 
+#' the allele frequencies at a locus by 
+#' \eqn{\sqrt{\bar{f}(1-\bar{f})}} where \eqn{\bar{f}} 
+#' is the average of the \eqn{K} sample allele frequencies,
+#' weighted by mean population size.  That is, 
+#' \deqn{\bar{f}_{\ell} = \frac{1}{\sum_K S_{k,\ell}} 
+#' \sum_K \hat{f}_{k,\ell} S_{k,\ell}}.
+#' 
+#' @param counts A matrix of allele counts for which each row corresponds to a 
+#'	sample and each column corresponds to a locus. The \eqn{ij}th entry gives the number 
+#'  of times the counted allele at the \eqn{j}th locus is observed in the \eqn{i}th sample.
+#'  Please see the vignette for a discussion of what the allele count data matrix 
+#'	should look like.
+#	
+#' @param sample.sizes A matrix of sample sizes for which each row corresponds to a 
+#'  sample and each column corresponds to a locus. The \eqn{ij}th entry gives the number 
+#'	of chromosomes genotyped in the \eqn{i}th sample at the \eqn{j}th locus.
+#'
+#' @return This function returns a list with three components:
+#' \itemize{
+#' \item norm.sample.covariance - normalized sample allele frequency covariance matrix.
+#' \item mean.sample.sizes - The vector of length \eqn{K} giving the mean sample size  
+#'	across loci in each of the \eqn{K} samples.
+#' \item loci - The number of loci in the dataset.
+#' }
+#' 
+#' @examples
+#' # load example dataset
+#' data(spacemix.example.dataset)
+#' 
+#' # generate normalized sample allele frequency covariance
+#' norm.samp.cov <- get.nrmlzd.sample.covariance(counts = spacemix.example.dataset$allele.counts,
+#'					sample.sizes = spacemix.example.dataset$sample.sizes)
+#'
+#' # visualize results
+#' image(norm.samp.cov$norm.sample.covariance,
+#' 		  main="Normalized sample allele frequency covariance",
+#' 		  xaxt='n',yaxt='n',xlab="Population",ylab="Population")
+#' axis(side=1,c(0:29)/29,labels=c(paste(1:30)))
+#' axis(side=2,c(0:29)/29,labels=c(paste(1:30)),las=2)
+
+get.nrmlzd.sample.covariance <- function(counts,sample.sizes){
+	sample.frequencies <- counts/sample.sizes
+	mean.sample.sizes <- apply(sample.sizes,1,function(x){sum(x)/length(which(x!=0))})
+	mean.sample.frequencies <- matrix(apply(sample.frequencies,2,
+											get.weighted.mean.frequency,
+											mean.sample.sizes= mean.sample.sizes),
+									nrow=length(mean.sample.sizes),ncol=ncol(sample.frequencies),byrow=TRUE)
+	normalized.sample.frequencies <- sample.frequencies/sqrt(mean.sample.frequencies*(1-mean.sample.frequencies))
+	sample.covariance <- cov(t(normalized.sample.frequencies),use="pairwise.complete.obs")
+	loci <- ncol(sample.frequencies)
+	return(list("norm.sample.covariance" = sample.covariance,
+				"mean.sample.sizes" = mean.sample.sizes,
+				"loci" = loci))
 }

@@ -389,10 +389,11 @@ the sample size-weighted mean would look like this:
 
 ```{r sample.cov.data.pt2}
 # start with a vector of mean sample sizes across samples
-#	(this is calculated from the sample.sizes matrix in
-#	the example above using the following command:
-#		rowSums(sample.sizes)/ncol(sample.sizes))
-mean.sample.sizes <- c(4.4,11.7,22.7,28.9,52.4)
+#	(this is calculated from the sample.sizes matrix by 
+#	taking the mean sample size in a sample across all loci 
+#	for which there are not missing data)
+mean.sample.sizes <- rowSums(sample.sizes) / 
+							apply(sample.sizes,1,function(x){length(which(x!=0))})
 
 # now calculate the sample size-weighted mean
 # 	which is quite similar to the sample size-weighted 
@@ -403,7 +404,7 @@ calculate.mean.sample.freq(frequencies[,1],matrix(mean.sample.sizes,nrow=5,ncol=
 ```
 
 Now we have covered how to calculate the sample size-
-weighted mean allele frequency at a locus ($\bar{f}). 
+weighted mean allele frequency at a locus ($\bar{f}$). 
 Next, we cover how to normalize the variance of the 
 frequencies across loci using these means.
 
@@ -450,6 +451,7 @@ nrow(normalized.allele.freqs) == 5
 #	the pairwise covariance
 sample.cov <- cov(t(normalized.allele.freqs),use="pairwise.complete.obs")
 sample.cov
+
 ```
 
 Notice that we used the option "pairwise.complete.obs". When this option 
@@ -471,6 +473,46 @@ As with the allele frequency matrix described above, if you choose
 to specify the allele frequency covariance matrix when running your 
 SpaceMix analysis, you must also specify a vector of mean sample 
 sizes for your samples.
+
+For clarity, I have walked through all the steps involved in the 
+generation of this normalized sample allele frequency covariance 
+in this section.  However, the same operations can be carried out 
+in a single function in the package: \code{get.nrmlzd.sample.covariance}.
+
+```{r sample.cov.data.pt6}
+# The function for generating a normalized sample covariance
+get.nrmlzd.sample.covariance <- function(counts,sample.sizes){
+	sample.frequencies <- counts/sample.sizes
+	mean.sample.sizes <- apply(sample.sizes,1,function(x){sum(x)/length(which(x!=0))})
+	mean.sample.frequencies <- matrix(apply(sample.frequencies,2,
+											get.weighted.mean.frequency,
+											mean.sample.sizes= mean.sample.sizes),
+									nrow=length(mean.sample.sizes),
+									ncol=ncol(sample.frequencies),byrow=TRUE)
+	normalized.sample.frequencies <- sample.frequencies / 
+										sqrt(mean.sample.frequencies * 
+												(1-mean.sample.frequencies))
+	sample.covariance <- cov(t(normalized.sample.frequencies),
+								use="pairwise.complete.obs")
+	loci <- ncol(sample.frequencies)
+	return(list("norm.sample.covariance" = sample.covariance,
+				"mean.sample.sizes" = mean.sample.sizes,
+				"loci" = loci))
+}
+
+# This function takes as its arguments a matrix of 
+#	allele counts and a matrix of sample sizes, so 
+#	we can get the allele counts by multiplying the 
+#	allele frequencies by the sample sizes
+allele.counts <- frequencies * sample.sizes
+
+# Next, we can calculate the normalized sample allele
+#	frequency covariance, and compare it to that produced by the 
+#	walkthrough above.
+nrmlzd.sample.cov.list <- get.nrmlzd.sample.covariance(allele.counts,sample.sizes)
+nrmlzd.sample.cov.list$norm.sample.cov
+
+```
 
 \
 

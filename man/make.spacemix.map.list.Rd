@@ -34,52 +34,52 @@ interval.}
 This function returns a list that can be used for plotting and visualization
 		of SpaceMix output.  The components of this list are:
 \itemize{
-\item MCMC.output This is a list of the output of the SpaceMix analysis,
+\item MCMC.output - This is a list of the output of the SpaceMix analysis,
 			containing all the elements of the output .Robj file.
-\item geographic.locations This is a k x 2 matrix in which the ith row
+\item geographic.locations - This is a k x 2 matrix in which the ith row
 		gives the geographic coordinates (i.e., longitude and latitude) of
 		the ith sample.
-\item name.vector This is a character vector of length k in which each
+\item name.vector - This is a character vector of length k in which each
 		element gives the name of the corresponding sample.
-\item color.vector This is a vector of colors of length k in which each element
+\item color.vector - This is a vector of colors of length k in which each element
 		gives the color in which the corresponding sample should be plotted.
-\item quantile This value determines the size of the credible interval
+\item quantile - This value determines the size of the credible interval
 		calculated for model parameters.
-\item best.iter This is the index of the sampled MCMC iteration with the largest
+\item best.iter - This is the index of the sampled MCMC iteration with the largest
 		posterior probability.  We refer to parameter estimates in that iteration as
 		the maximum a posteriori (MAP) estimates.
-\item admix.source.color.vector This is a vector of faded colors (the same as given
+\item admix.source.color.vector - This is a vector of faded colors (the same as given
 		in \code{color.vector}), for which the extent of fading is determined by the
 		admixture proportion.  These colors, for which the opacity is proportional
 		to the estimated admixture proportion, are used in plotting the admixture
 		sources and admixture arrows.
-\item k This is the number of samples in the analysis.
-\item MAPP.geogen.coords This is the Procrustes-transformed MAP geogenetic location
+\item k - This is the number of samples in the analysis.
+\item MAPP.geogen.coords - This is the Procrustes-transformed MAP geogenetic location
 		coordinates.
-\item MAPP.admix.source.coords This is the Procrustes-transformed MAP admixture source
+\item MAPP.admix.source.coords - This is the Procrustes-transformed MAP admixture source
 		location coordinates.
-\item procrustes.coord.posterior.lists This is a list of the Procrustes-transformed
+\item procrustes.coord.posterior.lists - This is a list of the Procrustes-transformed
 		location parameter coordinates.
 		\itemize{
-			\item geogen.coords.list A list of length N, where I is the number of sampled
+			\item geogen.coords.list - A list of length N, where I is the number of sampled
 					MCMC iterations.  The ith element of the list contains the Procrustes-
 					transformed geogenetic location coordinates in the ith sampled iteration
 					of the MCMC.  As a whole, this list represents the posterior distribution
 					of geogenetic location parameters for all samples.
-			\item admix.source.coords.list A list of length N, where I is the number of sampled
+			\item admix.source.coords.list - A list of length N, where I is the number of sampled
 					MCMC iterations.  The ith element of the list contains the Procrustes-
 					transformed admixture source location coordinates in the ith sampled iteration
 					of the MCMC.  As a whole, this list represents the posterior distribution
 					of admixture source location parameters for all samples.
 		}
-\item pp.geogen.location.matrices A list of length k in which the ith element is the Procrustes-
+\item pp.geogen.location.matrices - A list of length k in which the ith element is the Procrustes-
 		transformed posterior distribution of geogenetic location coordinates for the ith sample.
-\item pp.admix.source.location.matrices A list of length k in which the ith element is the Procrustes-
+\item pp.admix.source.location.matrices - A list of length k in which the ith element is the Procrustes-
 		transformed posterior distribution of admixture source location coordinates for the ith sample.
-\item pp.geogen.ellipses A list of length k in which the ith element gives the boundaries of the
+\item pp.geogen.ellipses - A list of length k in which the ith element gives the boundaries of the
 		95\% credible ellipse of the Procrustes-transformed posterior distribution of geogenetic
 		location coordinates of the ith sample.
-\item pp.admix.source.ellipses A list of length k in which the ith element gives the boundaries of the
+\item pp.admix.source.ellipses - A list of length k in which the ith element gives the boundaries of the
 		95\% credible ellipse of the Procrustes-transformed posterior distribution of admixture source
 		location coordinates of the ith sample.
 }
