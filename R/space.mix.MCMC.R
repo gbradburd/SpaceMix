@@ -1692,14 +1692,22 @@ get.posterior.location.matrix.from.list <- function(posterior.list,population.in
 }
 
 get.credible.ellipse <- function(posterior.points,quantile){
-	fit <- MASS::cov.mve(posterior.points, quantile.used = nrow(posterior.points) * quantile)
-	points_in_ellipse <- posterior.points[fit$best,]
-	ellipse_boundary <- stats::predict(cluster::ellipsoidhull(points_in_ellipse))
+	if(sum(colSums(abs(apply(posterior.points,2,diff)))) == 0){
+		ellipse_boundary <- posterior.points[1,,drop=FALSE]
+	} else {
+		fit <- MASS::cov.mve(posterior.points, quantile.used = nrow(posterior.points) * quantile)
+		points_in_ellipse <- posterior.points[fit$best,]
+		ellipse_boundary <- stats::predict(cluster::ellipsoidhull(points_in_ellipse))
+	}
 	return(ellipse_boundary)
 }
 
 plot.credible.ellipse <- function(ellipse_boundary,population.color,fading=0.3,lty=1){
-	polygon(ellipse_boundary,col=adjustcolor(population.color,fading),border=1,lty=lty)
+	if(nrow(ellipse_boundary) == 1){
+		points(ellipse_boundary,col=population.color,pch=19)
+	} else {
+		polygon(ellipse_boundary,col=adjustcolor(population.color,fading),border=1,lty=lty)
+	}
 }
 
 #' Post-processes SpaceMix output for plotting
