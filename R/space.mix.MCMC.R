@@ -1254,6 +1254,17 @@ query.MCMC.output <- function(MCMC.output,param.names=NULL,last.param.names=NULL
 	return(param.list)
 }
 
+check.model.options <- function(fast,long){
+	if(fast == "source" & long == "target" |
+	   fast == "target" & long == "source" |
+	   fast == "source_and_target" & long == "target" |
+	   fast == "source_and_target" & long == "source" |
+	   long == "no_movement" & fast != "no_movement"){
+		stop("the specified fast.model.option is not the same as,or nested within, the long.model.option\n\n")
+	}
+	return(invisible(0))
+}
+
 #' Runs a SpaceMix analysis
 #'
 #' This function runs a Markov chain Monte Carlo to estimate a geogenetic map of your genotyped samples.
@@ -1275,11 +1286,15 @@ query.MCMC.output <- function(MCMC.output,param.names=NULL,last.param.names=NULL
 #' the locations of the sources of admixture, and the strength of that admixture.
 #' }
 #'
-#' The algorithm proceeds by running a user-specified number of short initial runs
+#' The algorithm proceeds by running a user-specified number of fast initial runs
 #' from random locations in parameter space to find a generally good area, then one
-#' long run from the final location in parameter space from the best short run,
+#' long run from the final location in parameter space from the best fast run,
 #' the results of which are what the user cares about.  The user can also choose
 #' to run only a single long analysis, for which the initial parameters may be specified.
+#' If the user runs one or more fast runs, the \code{fast.model.option} specified must 
+#' be a model that is the same as, or nested within, the \code{long.model.option}.  
+#' For example, a user may not specify "source" for the fast runs and "target" for the 
+#' long runs.
 #' 
 #' @param n.fast.reps The number of short initial runs to perform.
 #' @param fast.MCMC.ngen The number of generations to run each initial MCMC analysis.
@@ -1414,6 +1429,7 @@ run.spacemix.analysis <- function(n.fast.reps,
 									prefix){
 	# recover()									
 	if(n.fast.reps !=0){
+		check.model.options(fast.model.option,long.model.option)
 		if(!is.null(directory)){
 			setwd(directory)
 		}

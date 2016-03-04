@@ -134,11 +134,15 @@ the locations of the sources of admixture, and the strength of that admixture.
 }
 }
 \details{
-The algorithm proceeds by running a user-specified number of short initial runs
+The algorithm proceeds by running a user-specified number of fast initial runs
 from random locations in parameter space to find a generally good area, then one
-long run from the final location in parameter space from the best short run,
+long run from the final location in parameter space from the best fast run,
 the results of which are what the user cares about.  The user can also choose
 to run only a single long analysis, for which the initial parameters may be specified.
+If the user runs one or more fast runs, the \code{fast.model.option} specified must
+be a model that is the same as, or nested within, the \code{long.model.option}.
+For example, a user may not specify "source" for the fast runs and "target" for the
+long runs.
 }
 \examples{
 # load example dataset
