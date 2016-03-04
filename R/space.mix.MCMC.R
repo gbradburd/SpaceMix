@@ -1260,9 +1260,22 @@ check.model.options <- function(fast,long){
 	   fast == "source_and_target" & long == "target" |
 	   fast == "source_and_target" & long == "source" |
 	   long == "no_movement" & fast != "no_movement"){
-		stop("the specified fast.model.option is not the same as,or nested within, the long.model.option\n\n")
+		stop("the specified fast.model.option is not the same as, or nested within, the long.model.option\n\n")
 	}
 	return(invisible(0))
+}
+
+fast.run.init.coords <- function(fast.model.option,x.coords,y.coords){
+	k <- length(x.coords)
+	if(fast.model.option == "no_movement" |
+		fast.model.option == "source"){
+		init.coords <- cbind(c(x.coords,runif(k,min(x.coords),max(x.coords))),
+							 c(y.coords,runif(k,min(y.coords),max(y.coords))))
+	} else {
+		init.coords <- cbind(runif(2*k,min(x.coords),max(x.coords)),
+							 runif(2*k,min(y.coords),max(y.coords)))
+	}
+	return(init.coords)
 }
 
 #' Runs a SpaceMix analysis
@@ -1437,12 +1450,10 @@ run.spacemix.analysis <- function(n.fast.reps,
 		for(i in 1:n.fast.reps){
 			dir.create(fast.run.dirs[i])
 			setwd(fast.run.dirs[i])
-#			random.initial.population.coordinates <- cbind(rep(0,2*k),rep(0,2*k))
-			random.initial.population.coordinates <- cbind( runif(2*k,min(spatial.prior.X.coordinates),
-																	max(spatial.prior.X.coordinates)),
-															runif(2*k,min(spatial.prior.Y.coordinates),
-																	max(spatial.prior.Y.coordinates)))
-			initial.parameters <- list("population.coordinates" = random.initial.population.coordinates)
+			initial.population.coordinates <- fast.run.init.coords(fast.model.option,
+																	spatial.prior.X.coordinates,
+																	spatial.prior.Y.coordinates)
+			initial.parameters <- list("population.coordinates" = initial.population.coordinates)
 			tryCatch({
 				MCMC(model.option = fast.model.option,
 					data.type = data.type,
