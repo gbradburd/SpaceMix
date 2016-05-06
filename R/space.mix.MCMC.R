@@ -1337,7 +1337,8 @@ fast.run.init.coords <- function(fast.model.option,x.coords,y.coords){
 #' @param mixing.diagn.freq Frequency of adaptive Metropolis-within-Gibbs updates do the tuning parameters of the proposal distributions.
 #'			Default value is every 50 MCMC iterations.
 #' @param savefreq Frequency with which MCMC_output object is saved.
-#' @param directory Directory into which you want output to be saved.
+#' @param directory Directory into which you want output to be saved.  If no directory is specified, a random directory name will be generated and 
+#' 			that directory will be created.
 #' @param prefix Prefix to be attached to all output files.
 #'
 #' @return This function saves an output R object (".Robj") which contains the results of the analysis.
@@ -1439,13 +1440,15 @@ run.spacemix.analysis <- function(n.fast.reps,
 									mixing.diagn.freq = 50,
 									savefreq,
 									directory=NULL,
-									prefix){
+									prefix="MyRun"){
 	# recover()									
 	if(n.fast.reps !=0){
 		check.model.options(fast.model.option,long.model.option)
-		if(!is.null(directory)){
-			setwd(directory)
+		if(is.null(directory)){
+			directory <- sprintf("run_%0.0f",1e6*runif(1))
+			dir.create(directory)
 		}
+		setwd(directory)
 		fast.run.dirs <- unlist(lapply(1:n.fast.reps,FUN=function(i){paste("fast_run_",i,sep="")}))
 		for(i in 1:n.fast.reps){
 			dir.create(fast.run.dirs[i])

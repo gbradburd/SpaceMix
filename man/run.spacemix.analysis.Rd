@@ -11,7 +11,7 @@ run.spacemix.analysis(n.fast.reps, fast.MCMC.ngen, fast.model.option,
   source.spatial.prior.scale = NULL, spatial.prior.X.coordinates,
   spatial.prior.Y.coordinates, round.earth,
   long.run.initial.parameters = NULL, k, loci, ngen, printfreq, samplefreq,
-  mixing.diagn.freq = 50, savefreq, directory = NULL, prefix)
+  mixing.diagn.freq = 50, savefreq, directory = NULL, prefix = "MyRun")
 }
 \arguments{
 \item{n.fast.reps}{The number of short initial runs to perform.}
@@ -65,7 +65,8 @@ Default value is every 50 MCMC iterations.}
 
 \item{savefreq}{Frequency with which MCMC_output object is saved.}
 
-\item{directory}{Directory into which you want output to be saved.}
+\item{directory}{Directory into which you want output to be saved.  If no directory is specified, a random directory name will be generated and
+that directory will be created.}
 
 \item{prefix}{Prefix to be attached to all output files.}
 }
