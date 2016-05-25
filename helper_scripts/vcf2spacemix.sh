@@ -10,7 +10,7 @@ vcffile=${1}
 
 function get_individuals() {
   local input=${1}
-  _a=( $( head -n12 ${input} |tail -n 1) )
+  _a=( $( grep -m 1 -e "^#CHROM" ${input}) )
   individuals="${_a[@]:9}"
   echo ${individuals}
   }
