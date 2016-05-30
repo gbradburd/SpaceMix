@@ -38,3 +38,9 @@ You can then look at the vignette with
 and you can see all documented functions using 
 
 > ??SpaceMix
+
+The citation for this paper is:
+Bradburd GS, Ralph PL, Coop GM (2016) A Spatial Framework for Understanding Population Structure and Admixture. PLoS Genet 12(1): e1005703
+
+and the DOI link is below:
+http://dx.doi.org/10.1371/journal.pgen.1005703
