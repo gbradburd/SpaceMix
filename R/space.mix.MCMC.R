@@ -307,7 +307,8 @@ get.weighted.mean.frequency <- function(sample.frequencies,mean.sample.sizes){
 	return(sample.frequency.weighted.mean)
 }
 
-curate.count.data <- function(counts,sample.sizes,prefix){
+curate.count.data <- function(counts,sample.sizes,prefix){ #FIX WAY DATA ARE DROPPED
+	#recover()
 	k <- nrow(counts)
 	original.loci <- ncol(counts)
 	sample.frequencies <- counts/sample.sizes
@@ -1909,7 +1910,7 @@ make.spacemix.map.list <- function(MCMC.output.file,geographic.locations,name.ve
 #' make.spacemix.map(example.spacemix.map.list,source=FALSE,text=TRUE)
 #' 
 make.spacemix.map <- function(spacemix.map.list,text=FALSE,ellipses=TRUE,source.option=TRUE,xlim=NULL,ylim=NULL){
-	with(spacemix.map.list,{ 
+	with(spacemix.map.list,{
 		plot(MAPP.geogen.coords,type='n',xlim=xlim,ylim=ylim,xlab="",ylab="")
 			if(ellipses){
 				lapply(1:k,FUN=function(i){plot.credible.ellipse(pp.geogen.ellipses[[i]],color.vector[i])})
